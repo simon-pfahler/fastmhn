@@ -10,5 +10,17 @@ def get_clusters(theta, e1, e2, max_size):
     `max_size`: maximum allowed size for the cluster containing `e1` and `e2`
     """
 
+    A = np.where(
+        np.abs(theta) > np.abs(theta.T), np.abs(theta), np.abs(theta.T)
+    )
+
+    D = np.diag(np.sum(A, axis=0))
+
+    L = D - A
+
+    Dinvsqrt = np.diag(np.diag(D ** (-0.5)))
+
+    L = Dinvsqrt @ L @ Dinvsqrt
+
     # TODO: Add a clustering algorithm here!
     return [(e1, e2), (i for i in range(theta.shape[0]) if i not in (e1, e2))]

@@ -40,4 +40,6 @@ for t in range(nr_iterations):
 
     optimizer.step()
 
-fastmhn.utility.write_matrix(results_filename, theta.detach().numpy())
+with open(results_filename, "w") as f:
+    for i in range(theta.shape[0]):
+        f.write(" ".join(map(str, theta.numpy()[i])) + "\n")

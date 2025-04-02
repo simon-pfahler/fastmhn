@@ -2,6 +2,7 @@ import numpy as np
 
 from .clustering import get_clusters
 from .exact import gradient_and_score
+from .utility import create_pD
 
 
 def approx_gradient(theta, data, max_cluster_size=None):
@@ -22,7 +23,7 @@ def approx_gradient(theta, data, max_cluster_size=None):
         # base rate gradients
         columns = get_clusters(theta, i, i, max_cluster_size)[0]
         g, _ = gradient_and_score(
-            theta[np.ix_(columns, columns)], data[:, columns]
+            theta[np.ix_(columns, columns)], create_pD(data[:, columns])
         )
         key = tuple(sorted(columns))
         gradient[i, i] = g[0, 0]
@@ -30,7 +31,7 @@ def approx_gradient(theta, data, max_cluster_size=None):
             # influence gradients
             columns = get_clusters(theta, i, j, max_cluster_size)[0]
             g, _ = gradient_and_score(
-                theta[np.ix_(columns, columns)], data[:, columns]
+                theta[np.ix_(columns, columns)], create_pD(data[:, columns])
             )
             key = tuple(sorted(columns))
             gradient[i, j] = g[0, 1]

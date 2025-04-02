@@ -29,10 +29,10 @@ optimizer = torch.optim.Adam([theta], lr=alpha, betas=(beta1, beta2), eps=eps)
 for t in range(nr_iterations):
     optimizer.zero_grad()
 
-    g = torch.from_numpy(
+    g = -torch.from_numpy(
         fastmhn.approx.approx_gradient(theta.numpy(), data, max_cluster_size=d)
     )
-    g -= reg * np.sign(theta - np.diag(np.diag(theta)))
+    g += reg * np.sign(theta - np.diag(np.diag(theta)))
 
     theta.grad = g
 

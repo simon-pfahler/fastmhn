@@ -53,9 +53,6 @@ def gradient_and_score(theta, pD):
     op_transpose = lambda x: apply_eye_minus_Q(theta, x, transpose=True)
     q = backward_substitution(op_transpose, pD / pTheta)
 
-    print(pD / pTheta)
-    print(q)
-
     gradient = np.zeros((d, d))
     for i in range(d):
         h = apply_Qdiff_ii(theta, pTheta, i)

@@ -1,11 +1,11 @@
 import numpy as np
 
 
-def get_clusters(theta, e1, e2, max_size=None, verbose=False):
+def hierarchical_clustering(theta, e1, e2, max_size=None, verbose=False):
     """
-    Performs a clustering based on a `theta` matrix, with the restriction that
-    `e1` and `e2` have to be in the same cluster, and that their cluster
-    contains at most `max_size` events.
+    Performs hierarchical clustering based on a `theta` matrix, with the
+    restriction that `e1` and `e2` have to be in the same cluster, and that
+    their cluster contains at most `max_size` events.
 
     `theta`: dxd theta matrix
     `e1`: first event of the important event pair

@@ -25,6 +25,38 @@ def create_indep_model(data):
     return theta
 
 
+def generate_theta(
+    d,
+    base_rate_loc=-1,
+    base_rate_scale=1,
+    influence_loc=0,
+    influence_scale=1,
+    sparsity=0.8,
+):
+    """
+    Generates artificial theta matrices that have similar features to
+    biological ones
+
+    `d`: number of events
+    `base_rate_loc`: average value of the base rates, should be around -1 for
+        few (<20) events and be smaller for more events, default is -1
+    `base_rate_scale`: scale parameter of the base rates, default is 1
+    `influence_loc`: average value of the influences, default is 0
+    `influence_scale`: scale parameter of the influences, default is 1
+    `sparsity`: percentage of influences which are set to zero, should be
+        larger the larger theta is, default is 0.8
+    """
+    theta = np.random.laplace(
+        loc=influence_loc, scale=influence_scale, size=(d, d)
+    )
+    theta = (np.random.random((d, d)) > sparsity) * theta
+    np.fill_diagonal(
+        theta,
+        np.random.normal(loc=base_rate_loc, scale=base_rate_scale, size=d),
+    )
+    return theta
+
+
 def create_pD(data):
     """
     Creates the data distribution given a dataset

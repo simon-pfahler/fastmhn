@@ -1,6 +1,6 @@
 import numpy as np
 
-from .utility import backward_substitution, forward_substitution
+from .utility import jacobi
 
 
 def calculate_pTheta(theta):
@@ -12,10 +12,13 @@ def calculate_pTheta(theta):
     """
     d = theta.shape[0]
 
-    op = lambda x: apply_eye_minus_Q(theta, x)
     p0 = np.zeros(2**d)
     p0[0] = 1
-    pTheta = forward_substitution(op, p0)
+
+    op_diag = lambda x: apply_eye_minus_Q_diag(theta, x)
+    op_offdiag = lambda x: apply_eye_minus_Q_offdiag(theta, x)
+
+    pTheta = jacobi(op_diag, op_offdiag, p0)
 
     return pTheta
 
@@ -48,8 +51,9 @@ def gradient_and_score(theta, data):
 
     score = np.dot(pD, np.log(pTheta))
 
-    op_transpose = lambda x: apply_eye_minus_Q(theta, x, transpose=True)
-    q = backward_substitution(op_transpose, pD / pTheta)
+    op_diag = lambda x: apply_eye_minus_Q_diag(theta, x)
+    op_offdiag = lambda x: apply_eye_minus_Q_offdiag(theta, x, transpose=True)
+    q = jacobi(op_diag, op_offdiag, pD / pTheta)
 
     gradient = np.zeros((d, d))
     for i in range(d):
@@ -71,6 +75,7 @@ def apply_eye_minus_Q(theta, x, transpose=False):
 
     `theta`: dxd theta matrix
     `x`: 2**d vector
+    `transpose`: set to true if (I-Q)^T @ x should be calculated
     """
     d = theta.shape[0]
     bigTheta = np.exp(theta)
@@ -92,6 +97,61 @@ def apply_eye_minus_Q(theta, x, transpose=False):
             else:
                 v[mask1] *= bigTheta[i, j]
         b -= v
+    return b
+
+
+def apply_eye_minus_Q_diag(theta, x, transpose=False):
+    """
+    Calculates diag(I-Q) @ x for a given theta matrix and vector x
+
+    `theta`: dxd theta matrix
+    `x`: 2**d vector
+    `transpose`: does not do anything, only added so the interface is the same
+        as for `apply_eye_minus_Q` and `apply_eye_minus_Q_offdiag`
+    """
+    d = theta.shape[0]
+    bigTheta = np.exp(theta)
+    b = x.copy()
+    for i in range(d):
+        v = x.copy()
+        for j in range(d):
+            mask0 = (np.arange(2**d) & (2**d >> (j + 1))) == 0
+            mask1 = (np.arange(2**d) & (2**d >> (j + 1))) != 0
+            if i == j:
+                v[mask0] *= -bigTheta[i, i]
+                v[mask1] = 0
+            else:
+                v[mask1] *= bigTheta[i, j]
+        b -= v
+    return b
+
+
+def apply_eye_minus_Q_offdiag(theta, x, transpose=False):
+    """
+    Calculates offdiag(I-Q) @ x for a given theta matrix and vector x
+
+    `theta`: dxd theta matrix
+    `x`: 2**d vector
+    `transpose`: set to true if offdiad(I-Q)^T @ x should be calculated
+    """
+    d = theta.shape[0]
+    bigTheta = np.exp(theta)
+    b = np.zeros_like(x)
+    for i in range(d):
+        v = x.copy()
+        for j in range(d):
+            mask0 = (np.arange(2**d) & (2**d >> (j + 1))) == 0
+            mask1 = (np.arange(2**d) & (2**d >> (j + 1))) != 0
+            if i == j:
+                if transpose:
+                    v[mask0] = bigTheta[i, i] * v[mask1]
+                    v[mask1] = 0
+                else:
+                    v[mask1] = bigTheta[i, i] * v[mask0]
+                    v[mask0] = 0
+            else:
+                v[mask1] *= bigTheta[i, j]
+        b += v
     return b
 
 

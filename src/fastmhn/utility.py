@@ -93,6 +93,32 @@ def forward_substitution(lower_triangular_operator, rhs):
     return res
 
 
+def jacobi(op_diag, op_offdiag, rhs, iterations=None):
+    """
+    Approximates the solution of the linear equation Ax=b for a matrix A, given
+    as a sum of a diagonal and an off-diagonal operator.
+
+    `op_diag`: function that takes a vector `x` and returns `diag(A)x`
+    `op_offdiag`: function that takes a vector `x` and returns `offdiag(A)x`
+    `rhs`: right-hand side of the linear equation
+    `iterations`: number of iterations to perform, defaults to `len(rhs)`,
+        which gives the exact solution the case of a triangular matrix
+    """
+
+    if iterations == None:
+        iterations = len(rhs).bit_length()
+
+    res = np.ones_like(rhs) / len(rhs)
+
+    dg = op_diag(np.ones_like(res))
+
+    for i in range(iterations):
+        res = rhs + op_offdiag(res)
+        res /= dg
+
+    return res
+
+
 def backward_substitution(upper_triangular_operator, rhs):
     """
     Calculates the solution of the linear equation Ux=b for an upper triangular

@@ -1,15 +1,19 @@
 import numpy as np
 
 
-def hierarchical_clustering(theta, e1, e2, max_size=None, verbose=False):
+def hierarchical_clustering(
+    theta, e1=None, e2=None, max_size=None, verbose=False
+):
     """
     Performs hierarchical clustering based on a `theta` matrix, with the
     restriction that `e1` and `e2` have to be in the same cluster, and that
     their cluster contains at most `max_size` events.
+    When `e1` and `e2` are not specified, the algorithm makes sure that none of
+    the clusters contain more than `max_size` events.
 
     `theta`: dxd theta matrix
-    `e1`: first event of the important event pair
-    `e2`: second event of the important event pair
+    `e1`: first event of the important event pair, default is `None`
+    `e2`: second event of the important event pair, default is `None`
     `max_size`: maximum allowed size for the cluster containing `e1` and `e2`
     `verbose`: set to `True` to get more output
     """
@@ -17,6 +21,11 @@ def hierarchical_clustering(theta, e1, e2, max_size=None, verbose=False):
     d = theta.shape[0]
     if max_size == None:
         max_size = d
+    restrict_only_first_size = True
+    if e1 is None and e2 is None:
+        restrict_only_first_size = False
+        e1 = 0
+        e2 = 0
     clustering = [
         list({e1, e2}),
         *[[i] for i in range(d) if i not in (e1, e2)],
@@ -48,13 +57,20 @@ def hierarchical_clustering(theta, e1, e2, max_size=None, verbose=False):
 
         # check whether the combination is allowed
         allowed = True
-        if combine_clusters[0] == 0:
-            if (
+        if restrict_only_first_size:
+            if combine_clusters[0] == 0:
+                if (
+                    len(clustering[combine_clusters[0]])
+                    + len(clustering[combine_clusters[1]])
+                    > max_size
+                ):
+                    allowed = False
+        else:
+            allowed = (
                 len(clustering[combine_clusters[0]])
                 + len(clustering[combine_clusters[1]])
-                > max_size
-            ):
-                allowed = False
+                <= max_size
+            )
 
         # set corresponding distance to infinity
         if not allowed:

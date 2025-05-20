@@ -12,12 +12,13 @@ N = 100
 data = np.random.randint(2, size=(N, d), dtype=np.int32)
 
 # >>> optimization parameters
-nr_iterations = 200
+nr_iterations = 50
 alpha = 0.1
 beta1 = 0.7
 beta2 = 0.9
 eps = 1e-8
 reg = 1e-2
+mcs = 25
 # <<< optimization parameters
 
 theta_np = np.zeros((d + 1, d))

@@ -57,6 +57,60 @@ def generate_theta(
     return theta
 
 
+def generate_data(thetaGT, size):
+    """
+    Generates artificial data from a ground truth theta matrix
+
+    This method uses the Gillespie algorithm to sample from the Markov process
+    parameterized by the given theta matrix
+
+    `thetaGT`: ground truth theta matrix
+    `size`: number of samples to generate
+    """
+    d = thetaGT.shape[0]
+
+    data = np.zeros((size, d), dtype=np.int32)
+
+    zero_column = True
+    run_nr = 0
+    while run_nr < 10 and zero_column == True:
+
+        # generate the samples
+        for i in range(size):
+            sample = np.zeros(d, dtype=np.int32)
+
+            # Gillespie algorithm: add events until the sample gets observed
+            transitionRates = np.exp(np.diag(thetaGT))
+            while True:
+
+                # get next event
+                rateSum = np.sum(transitionRates) + 1
+                rand = np.random.rand()
+                sumRejected = 0
+                newEvent = 0
+                while sumRejected + transitionRates[newEvent] < rand * rateSum:
+                    sumRejected += transitionRates[newEvent]
+                    newEvent += 1
+                    if newEvent == d:
+                        break
+                if newEvent == d:
+                    break
+                sample[newEvent] = 1
+
+                # update transition rates
+                transitionRates[newEvent] = 0
+                transitionRates *= np.exp(thetaGT[:, newEvent])
+
+            data[i] = sample
+
+        # check if there is a zero column
+        if all(np.sum(data, axis=1) != 0):
+            zero_column = False
+        run_nr += 1
+
+    return data
+
+
 def create_pD(data):
     """
     Creates the data distribution given a dataset

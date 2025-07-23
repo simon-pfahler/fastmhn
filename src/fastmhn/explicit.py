@@ -1,6 +1,6 @@
 import numpy as np
 
-from .utility import jacobi
+from .utility import create_pD, jacobi
 
 
 def calculate_pTheta(theta):
@@ -46,6 +46,8 @@ def gradient_and_score(theta, data):
     `pD`: 2**d probability distribution of the data
     """
     d = theta.shape[0]
+
+    pD = create_pD(data)
 
     pTheta = calculate_pTheta(theta)
 

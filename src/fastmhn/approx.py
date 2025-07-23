@@ -54,3 +54,36 @@ def approx_gradient(
                 print(f"{i}, {j}: {gradient[i,j]} ({len(columns)} events)")
                 print(f"{j}, {i}: {gradient[j,i]} ({len(columns)} events)")
     return gradient
+
+
+def approx_score(
+    theta,
+    data,
+    clustering_algorithm=hierarchical_clustering,
+    max_cluster_size=None,
+    verbose=False,
+):
+    """
+    Calculates approximate score using the clustering provided by
+    `fastmhn.clustering.get_cluster`.
+
+    `theta`: dxd theta matrix
+    `data`: Nxd matrix containing the dataset
+    `clustering_algorithm`: Clustering algorithm to use, default is
+        `hierarchical_clustering` from `fastmhn.clustering`
+    `max_cluster_size`: maximal allowed size for clusters
+    `verbose`: set to `True` to get more output
+    """
+    d = theta.shape[0]
+    if max_cluster_size == None:
+        max_cluster_size = d
+
+    score = 0
+    clustering = clustering_algorithm(theta, max_size=max_cluster_size)
+    # go through clusters and add their sub-scores
+    for columns in clustering:
+        _, s = gradient_and_score(
+            theta[np.ix_(columns, columns)], data[:, columns]
+        )
+        score += s
+    return score

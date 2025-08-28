@@ -32,7 +32,9 @@ def approx_gradient(
         print("Indices: gradient")
     for i in range(d):
         # base rate gradients
-        columns = clustering_algorithm(theta, i, i, max_cluster_size)[0]
+        columns = clustering_algorithm(
+            theta, e1=i, e2=i, max_size=max_cluster_size
+        )[0]
         g, _ = gradient_and_score(
             theta[np.ix_(columns, columns)], data[:, columns]
         )
@@ -43,7 +45,9 @@ def approx_gradient(
             print(f"{i}, {i}: {gradient[i,i]} ({len(columns)} events)")
         for j in range(i + 1, d):
             # influence gradients
-            columns = clustering_algorithm(theta, i, j, max_cluster_size)[0]
+            columns = clustering_algorithm(
+                theta, e1=i, e2=j, max_size=max_cluster_size
+            )[0]
             g, _ = gradient_and_score(
                 theta[np.ix_(columns, columns)], data[:, columns]
             )

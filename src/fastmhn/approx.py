@@ -38,7 +38,6 @@ def approx_gradient(
         g, _ = gradient_and_score(
             theta[np.ix_(columns, columns)], data[:, columns]
         )
-        key = tuple(sorted(columns))
         gradient[i, i] = g[0, 0]
 
         if verbose:
@@ -51,7 +50,6 @@ def approx_gradient(
             g, _ = gradient_and_score(
                 theta[np.ix_(columns, columns)], data[:, columns]
             )
-            key = tuple(sorted(columns))
             gradient[i, j] = g[0, 1]
             gradient[j, i] = g[1, 0]
             if verbose:

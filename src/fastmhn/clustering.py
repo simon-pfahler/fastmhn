@@ -31,6 +31,10 @@ def hierarchical_clustering(
         *[[i] for i in range(d) if i not in (e1, e2)],
     ]
 
+    # fix order if it was broken by the set
+    if clustering[0][0] != e1:
+        clustering[0] = clustering[0][::-1]
+
     # we store inverse cluster distances because many distances are infinity
     inv_cluster_distances = np.zeros((len(clustering), len(clustering)))
     for i in range(len(clustering)):

@@ -1,4 +1,5 @@
 import numpy as np
+from joblib import Parallel, delayed
 
 from .clustering import hierarchical_clustering
 from .exact import gradient_and_score
@@ -24,37 +25,43 @@ def approx_gradient(
     `verbose`: set to `True` to get more output
     """
     d = theta.shape[0]
-    if max_cluster_size == None:
+    if max_cluster_size is None:
         max_cluster_size = d
 
     gradient = np.zeros((d, d))
-    if verbose:
-        print("Indices: gradient")
-    for i in range(d):
-        # base rate gradients
+    tasks = [(i, j) for i in range(d) for j in range(i, d)]
+
+    # helper function for parallelization
+    def _compute_gradient_block(i, j):
         columns = clustering_algorithm(
-            theta, e1=i, e2=i, max_size=max_cluster_size
+            theta, e1=i, e2=j, max_size=max_cluster_size
         )[0]
         g, _ = gradient_and_score(
             theta[np.ix_(columns, columns)], data[:, columns]
         )
-        gradient[i, i] = g[0, 0]
+        if i == j:
+            return (i, g[0, 0])
+        else:
+            return (i, j, g[0, 1], g[1, 0], len(columns))
 
-        if verbose:
-            print(f"{i}, {i}: {gradient[i,i]} ({len(columns)} events)")
-        for j in range(i + 1, d):
-            # influence gradients
-            columns = clustering_algorithm(
-                theta, e1=i, e2=j, max_size=max_cluster_size
-            )[0]
-            g, _ = gradient_and_score(
-                theta[np.ix_(columns, columns)], data[:, columns]
-            )
-            gradient[i, j] = g[0, 1]
-            gradient[j, i] = g[1, 0]
+    results = Parallel(n_jobs=-1)(
+        delayed(_compute_gradient_block)(i, j) for i, j in tasks
+    )
+
+    for res in results:
+        if len(res) == 2:
+            i, gii = res
+            gradient[i, i] = gii
             if verbose:
-                print(f"{i}, {j}: {gradient[i,j]} ({len(columns)} events)")
-                print(f"{j}, {i}: {gradient[j,i]} ({len(columns)} events)")
+                print(f"{i}, {i}: {gii}")
+        else:
+            i, j, gij, gji, l = res
+            gradient[i, j] = gij
+            gradient[j, i] = gji
+            if verbose:
+                print(f"{i}, {j}: {gij} ({l} events)")
+                print(f"{j}, {i}: {gji} ({l} events)")
+
     return gradient
 
 
@@ -77,7 +84,7 @@ def approx_score(
     `verbose`: set to `True` to get more output
     """
     d = theta.shape[0]
-    if max_cluster_size == None:
+    if max_cluster_size is None:
         max_cluster_size = d
 
     score = 0

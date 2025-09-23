@@ -173,6 +173,28 @@ def jacobi(op_diag, op_offdiag, rhs, iterations=None):
     return res
 
 
+def get_score_offset(data):
+    """
+    Calculates the offset between the log-likelihood score and the KL divergence.
+    The KL divergence is obtained from the score and this offset via
+        D_{KL} = offset - score.
+
+    The offset is calculated via
+        offset = sum_{x}p_{D,x}\ln(p_{D,x})
+
+    `data`: Nxd dataset to calculate offset for
+    """
+
+    N = data.shape[0]
+    _, counts = np.unique(data, axis=0, return_counts=True)
+
+    offset = 0
+    for count in counts:
+        offset += count / N * np.log(count / N)
+
+    return offset
+
+
 def backward_substitution(upper_triangular_operator, rhs):
     """
     Calculates the solution of the linear equation Ux=b for an upper triangular

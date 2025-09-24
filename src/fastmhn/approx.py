@@ -40,27 +40,27 @@ def approx_gradient(
             theta[np.ix_(columns, columns)], data[:, columns]
         )
         if i == j:
-            return (i, g[0, 0])
+            return (i, g[0, 0], columns)
         else:
-            return (i, j, g[0, 1], g[1, 0], len(columns))
+            return (i, j, g[0, 1], g[1, 0], columns)
 
     results = Parallel(n_jobs=-1)(
         delayed(_compute_gradient_block)(i, j) for i, j in tasks
     )
 
     for res in results:
-        if len(res) == 2:
-            i, gii = res
+        if len(res) == 3:
+            i, gii, columns = res
             gradient[i, i] = gii
             if verbose:
-                print(f"{i}, {i}: {gii}")
+                print(f"{i}, {i}: {gii} (Cluster {columns})")
         else:
-            i, j, gij, gji, l = res
+            i, j, gij, gji, columns = res
             gradient[i, j] = gij
             gradient[j, i] = gji
             if verbose:
-                print(f"{i}, {j}: {gij} ({l} events)")
-                print(f"{j}, {i}: {gji} ({l} events)")
+                print(f"{i}, {j}: {gij} (Cluster {columns})")
+                print(f"{j}, {i}: {gji} (Cluster {columns})")
 
     return gradient
 

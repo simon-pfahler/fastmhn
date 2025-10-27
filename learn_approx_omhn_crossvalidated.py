@@ -1,9 +1,9 @@
 import numpy as np
 import torch
 
-torch.set_grad_enabled(False)
-
 import fastmhn
+
+torch.set_grad_enabled(False)
 
 results_filename = "theta.dat"
 
@@ -71,9 +71,9 @@ for k_index in range(k):
 
         g = torch.zeros(theta.shape, dtype=torch.double)
         g[:d] = -torch.from_numpy(
-            fastmhn.approx.approx_gradient(
-                ctheta, data_train, max_cluster_size=mcs, verbose=True
-            )
+            fastmhn.approx.approx_gradient_and_score(
+                ctheta, data_train, max_cluster_size=mcs
+            )[0]
         )
 
         # observation rate gradients
@@ -105,9 +105,9 @@ for k_index in range(k):
             else:
                 ctheta[i, j] = theta[i, j] - theta[d, j]
 
-    curr_validation_score = fastmhn.approx.approx_score(
+    curr_validation_score = fastmhn.approx.approx_gradient_and_score(
         ctheta, data_train, max_cluster_size=mcs
-    )
+    )[1]
     average_validation_score += curr_validation_score
 
     print(f"Fold {k_index} finished, validation score: {curr_validation_score}")

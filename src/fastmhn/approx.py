@@ -6,7 +6,7 @@ from .exact import gradient_and_score
 from .utility import create_pD
 
 
-def approx_gradient(
+def approx_gradient_and_score(
     theta,
     data,
     clustering_algorithm=hierarchical_clustering,
@@ -14,8 +14,8 @@ def approx_gradient(
     verbose=False,
 ):
     """
-    Calculates approximate gradients using the clustering provided by
-    `fastmhn.clustering.get_cluster`.
+    Calculates approximate gradients and scores using a provided clustering
+    algorithm.
 
     `theta`: dxd theta matrix
     `data`: Nxd matrix containing the dataset
@@ -28,71 +28,52 @@ def approx_gradient(
     if max_cluster_size is None:
         max_cluster_size = d
 
-    gradient = np.zeros((d, d))
-    tasks = [(i, j) for i in range(d) for j in range(i, d)]
-
-    # helper function for parallelization
-    def _compute_gradient_block(i, j):
-        columns = clustering_algorithm(
-            theta, e1=i, e2=j, max_size=max_cluster_size
-        )[0]
-        g, _ = gradient_and_score(
-            theta[np.ix_(columns, columns)], data[:, columns]
+    if verbose:
+        avg_MB = np.mean(np.sum(data, axis=1))
+        max_MB = np.max(np.sum(data, axis=1))
+        nr_samples_approx = np.sum(np.sum(data, axis=1) > max_cluster_size)
+        print(
+            f"Dataset information for gradient and score calculation:\n"
+            f"\t{data.shape[0]} Patients\n"
+            f"\tAverage mutational burden: {avg_MB}\n"
+            f"\tMaximum mutational burden: {max_MB}\n"
+            f"\tNumber of samples with MB > {max_cluster_size}: "
+            f"{nr_samples_approx}"
         )
-        if i == j:
-            return (i, g[0, 0], columns)
-        else:
-            return (i, j, g[0, 1], g[1, 0], columns)
+
+    # calculate gradient and score contributions for each patient individually
+    def process_patient(nr_patient):
+        # exact calculation if possible
+        if np.sum(data[nr_patient]) <= max_cluster_size:
+            g, s = gradient_and_score(theta, data[nr_patient : nr_patient + 1])
+            return g, s
+
+        # approximate calculation
+        clustering = clustering_algorithm(
+            theta,
+            max_size=max_cluster_size,
+            active_events=[i for i, x in enumerate(data[nr_patient]) if x == 1],
+        )
+
+        g_total = np.zeros_like(theta)
+        s_total = 0
+        for cluster in clustering:
+            g, s = gradient_and_score(
+                theta[np.ix_(cluster, cluster)],
+                data[nr_patient : nr_patient + 1, cluster],
+            )
+            s_total += s
+            for cluster_i, i in enumerate(cluster):
+                for cluster_j, j in enumerate(cluster):
+                    g_total[i, j] += g[cluster_i, cluster_j]
+
+        return g_total, s_total
 
     results = Parallel(n_jobs=-1)(
-        delayed(_compute_gradient_block)(i, j) for i, j in tasks
+        delayed(process_patient)(i) for i in range(data.shape[0])
     )
+    gradients, scores = zip(*results)
+    gradient = np.sum(gradients, axis=0) / data.shape[0]
+    score = np.sum(scores) / data.shape[0]
 
-    for res in results:
-        if len(res) == 3:
-            i, gii, columns = res
-            gradient[i, i] = gii
-            if verbose:
-                print(f"{i}, {i}: {gii} (Cluster {columns})")
-        else:
-            i, j, gij, gji, columns = res
-            gradient[i, j] = gij
-            gradient[j, i] = gji
-            if verbose:
-                print(f"{i}, {j}: {gij} (Cluster {columns})")
-                print(f"{j}, {i}: {gji} (Cluster {columns})")
-
-    return gradient
-
-
-def approx_score(
-    theta,
-    data,
-    clustering_algorithm=hierarchical_clustering,
-    max_cluster_size=None,
-    verbose=False,
-):
-    """
-    Calculates approximate score using the clustering provided by
-    `fastmhn.clustering.get_cluster`.
-
-    `theta`: dxd theta matrix
-    `data`: Nxd matrix containing the dataset
-    `clustering_algorithm`: Clustering algorithm to use, default is
-        `hierarchical_clustering` from `fastmhn.clustering`
-    `max_cluster_size`: maximal allowed size for clusters
-    `verbose`: set to `True` to get more output
-    """
-    d = theta.shape[0]
-    if max_cluster_size is None:
-        max_cluster_size = d
-
-    score = 0
-    clustering = clustering_algorithm(theta, max_size=max_cluster_size)
-    # go through clusters and add their sub-scores
-    for columns in clustering:
-        _, s = gradient_and_score(
-            theta[np.ix_(columns, columns)], data[:, columns]
-        )
-        score += s
-    return score
+    return gradient, score

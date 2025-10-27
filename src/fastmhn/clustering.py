@@ -2,7 +2,7 @@ import numpy as np
 
 
 def hierarchical_clustering(
-    theta, e1=None, e2=None, max_size=None, verbose=False
+    theta, e1=None, e2=None, max_size=None, active_events=None, verbose=False
 ):
     """
     Performs hierarchical clustering based on a `theta` matrix, with the
@@ -10,11 +10,14 @@ def hierarchical_clustering(
     their cluster contains at most `max_size` events.
     When `e1` and `e2` are not specified, the algorithm makes sure that none of
     the clusters contain more than `max_size` events.
+    When `active_events` is not None, the algorithm instead makes sure that
+    none of the clusters contain more than `max_size` events from this list.
 
     `theta`: dxd theta matrix
     `e1`: first event of the important event pair, default is `None`
     `e2`: second event of the important event pair, default is `None`
     `max_size`: maximum allowed size for the cluster containing `e1` and `e2`
+    `active_events`: list containing relevant events for size restriction
     `verbose`: set to `True` to get more output
     """
 
@@ -30,6 +33,10 @@ def hierarchical_clustering(
         list({e1, e2}),
         *[[i] for i in range(d) if i not in (e1, e2)],
     ]
+
+    # set active_events to the whole list if it is None
+    if active_events is None:
+        active_events = list(range(d))
 
     # fix order if it was broken by the set
     if clustering[0][0] != e1:
@@ -63,16 +70,39 @@ def hierarchical_clustering(
         allowed = True
         if restrict_only_first_size:
             if combine_clusters[0] == 0:
-                if (
-                    len(clustering[combine_clusters[0]])
-                    + len(clustering[combine_clusters[1]])
-                    > max_size
-                ):
-                    allowed = False
+                allowed = (
+                    len(
+                        [
+                            e
+                            for e in clustering[combine_clusters[0]]
+                            if e in active_events
+                        ]
+                    )
+                    + len(
+                        [
+                            e
+                            for e in clustering[combine_clusters[1]]
+                            if e in active_events
+                        ]
+                    )
+                    <= max_size
+                )
         else:
             allowed = (
-                len(clustering[combine_clusters[0]])
-                + len(clustering[combine_clusters[1]])
+                len(
+                    [
+                        e
+                        for e in clustering[combine_clusters[0]]
+                        if e in active_events
+                    ]
+                )
+                + len(
+                    [
+                        e
+                        for e in clustering[combine_clusters[1]]
+                        if e in active_events
+                    ]
+                )
                 <= max_size
             )
 

@@ -1,9 +1,9 @@
 import numpy as np
 import torch
 
-torch.set_grad_enabled(False)
-
 import fastmhn
+
+torch.set_grad_enabled(False)
 
 results_filename = "theta.dat"
 
@@ -29,7 +29,9 @@ optimizer = torch.optim.Adam([theta], lr=alpha, betas=(beta1, beta2), eps=eps)
 for t in range(nr_iterations):
     optimizer.zero_grad()
 
-    g = -torch.from_numpy(fastmhn.approx.approx_gradient(theta.numpy(), data))
+    g = -torch.from_numpy(
+        fastmhn.approx.approx_gradient_and_score(theta.numpy(), data)[0]
+    )
     g += reg * torch.sign(theta * (1 - torch.eye(theta.shape[0])))
 
     theta.grad = g

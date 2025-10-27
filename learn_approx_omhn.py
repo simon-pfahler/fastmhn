@@ -1,9 +1,9 @@
 import numpy as np
 import torch
 
-torch.set_grad_enabled(False)
-
 import fastmhn
+
+torch.set_grad_enabled(False)
 
 results_filename = "theta.dat"
 
@@ -42,9 +42,9 @@ for t in range(nr_iterations):
 
     g = torch.zeros(theta.shape, dtype=torch.double)
     g[:d] = -torch.from_numpy(
-        fastmhn.approx.approx_gradient(
-            ctheta, data, max_cluster_size=mcs, verbose=True
-        )
+        fastmhn.approx.approx_gradient_and_score(
+            ctheta, data, max_cluster_size=mcs, verbose=False
+        )[0]
     )
 
     # observation rate gradients

@@ -106,7 +106,7 @@ for k_index in range(k):
                 ctheta[i, j] = theta[i, j] - theta[d, j]
 
     curr_validation_score = fastmhn.approx.approx_gradient_and_score(
-        ctheta, data_train, max_cluster_size=mcs
+        ctheta, data_val, max_cluster_size=mcs
     )[1]
     average_validation_score += curr_validation_score
 

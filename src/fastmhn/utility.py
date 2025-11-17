@@ -173,7 +173,7 @@ def jacobi(op_diag, op_offdiag, rhs, iterations=None):
     return res
 
 
-def get_score_offset(data):
+def get_score_offset(data, weights=None):
     """
     Calculates the offset between the log-likelihood score and the KL divergence.
     The KL divergence is obtained from the score and this offset via
@@ -183,13 +183,20 @@ def get_score_offset(data):
         offset = sum_{x}p_{D,x}\ln(p_{D,x})
 
     `data`: Nxd dataset to calculate offset for
+    `weights`: array of length N, used set the influence of individual samples
+        on the score and gradient, default is `None`, which uses a weight of 1
+        for all samples
     """
 
-    N = data.shape[0]
-    _, counts = np.unique(data, axis=0, return_counts=True)
+    if weights is None:
+        weights = np.ones(data.shape[0])
+
+    N = np.sum(weights)
+    unique_samples = np.unique(data, axis=0)
 
     offset = 0
-    for count in counts:
+    for sample in unique_samples:
+        count = np.sum(weights[np.all(data == sample, axis=1)])
         offset += count / N * np.log(count / N)
 
     return offset
@@ -214,3 +221,16 @@ def backward_substitution(upper_triangular_operator, rhs):
         single[-i] = 1
         res[-i] /= upper_triangular_operator(single)[-i]
     return res
+
+
+def cmhn_from_omhn(theta_omhn):
+    d = theta_omhn.shape[1]
+    ctheta = np.zeros((d, d))
+    for i in range(d):
+        for j in range(d):
+            if i == j:
+                ctheta[i, j] = theta_omhn[i, j]
+            else:
+                ctheta[i, j] = theta_omhn[i, j] - theta_omhn[d, j]
+
+    return ctheta

@@ -32,13 +32,7 @@ for t in range(nr_iterations):
     optimizer.zero_grad()
 
     # create MHN theta matrix equivalent to current oMHN
-    ctheta = np.zeros((d, d))
-    for i in range(d):
-        for j in range(d):
-            if i == j:
-                ctheta[i, j] = theta[i, j]
-            else:
-                ctheta[i, j] = theta[i, j] - theta[d, j]
+    ctheta = fastmhn.utility.cmhn_from_omhn(theta)
 
     g = torch.zeros(theta.shape, dtype=torch.double)
     g[:d] = -torch.from_numpy(

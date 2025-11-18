@@ -1,9 +1,9 @@
 import numpy as np
 import torch
 
-torch.set_grad_enabled(False)
-
 import fastmhn
+
+torch.set_grad_enabled(False)
 
 results_filename = "theta.dat"
 
@@ -21,6 +21,19 @@ reg = 1e-2
 mcs = 25
 # <<< optimization parameters
 
+# >>> Print information about dataset
+avg_MB = np.mean(np.sum(data, axis=1))
+max_MB = np.max(np.sum(data, axis=1))
+nr_samples_approx = np.sum(np.sum(data, axis=1) > mcs)
+print(
+    f"Dataset information:\n"
+    f"\t{data.shape[0]} Patients\n"
+    f"\tAverage mutational burden: {avg_MB}\n"
+    f"\tMaximum mutational burden: {max_MB}\n"
+    f"\tNumber of samples with MB > {mcs}: {nr_samples_approx}"
+)
+# <<< Print information about dataset
+
 theta_np = np.zeros((d + 1, d))
 theta_np[:d] = fastmhn.utility.create_indep_model(data)
 
@@ -28,23 +41,18 @@ theta = torch.tensor(theta_np, requires_grad=True)
 
 optimizer = torch.optim.Adam([theta], lr=alpha, betas=(beta1, beta2), eps=eps)
 
+# training loop
 for t in range(nr_iterations):
     optimizer.zero_grad()
 
     # create MHN theta matrix equivalent to current oMHN
-    ctheta = np.zeros((d, d))
-    for i in range(d):
-        for j in range(d):
-            if i == j:
-                ctheta[i, j] = theta[i, j]
-            else:
-                ctheta[i, j] = theta[i, j] - theta[d, j]
+    ctheta = fastmhn.utility.cmhn_from_omhn(theta)
 
     g = torch.zeros(theta.shape, dtype=torch.double)
     g[:d] = -torch.from_numpy(
-        fastmhn.approx.approx_gradient(
-            ctheta, data, max_cluster_size=mcs, verbose=True
-        )
+        fastmhn.approx.approx_gradient_and_score(
+            ctheta, data, max_cluster_size=mcs, verbose=False
+        )[0]
     )
 
     # observation rate gradients
@@ -60,6 +68,4 @@ for t in range(nr_iterations):
 
     optimizer.step()
 
-with open(results_filename, "w") as f:
-    for i in range(theta.shape[0]):
-        f.write(" ".join(map(str, theta.numpy()[i])) + "\n")
+np.savetxt(results_filename, theta.numpy())

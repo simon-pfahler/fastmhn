@@ -2,8 +2,6 @@ import numpy as np
 
 import fastmhn
 
-torch.set_grad_enabled(False)
-
 results_filename = "theta.dat"
 
 d = 3

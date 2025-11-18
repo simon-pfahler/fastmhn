@@ -224,6 +224,11 @@ def backward_substitution(upper_triangular_operator, rhs):
 
 
 def cmhn_from_omhn(theta_omhn):
+    """
+    Create the equivalent cMHN from an oMHN.
+
+    `theta_omhn`: observation MHN theta matrix
+    """
     d = theta_omhn.shape[1]
     ctheta = np.zeros((d, d))
     for i in range(d):

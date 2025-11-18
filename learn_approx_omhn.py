@@ -11,7 +11,7 @@ data = np.random.randint(2, size=(N, d), dtype=np.int32)
 # >>> optimization parameters
 gradient_and_score_params = {"max_cluster_size": 10}
 reg = 1e-2
-adamW_params = {
+adam_params = {
     "alpha": 0.1,
     "beta1": 0.7,
     "beta2": 0.9,
@@ -39,7 +39,7 @@ theta = fastmhn.learn.learn_omhn(
     data,
     reg=reg,
     gradient_and_score_params=gradient_and_score_params,
-    adamW_params=adamW_params,
+    adam_params=adam_params,
 )
 
 np.savetxt(results_filename, theta)

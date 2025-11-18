@@ -239,3 +239,73 @@ def cmhn_from_omhn(theta_omhn):
                 ctheta[i, j] = theta_omhn[i, j] - theta_omhn[d, j]
 
     return ctheta
+
+
+def adamW(
+    params_init,
+    grad_and_score_func,
+    reg_grad_func,
+    alpha=1e-3,
+    beta1=0.9,
+    beta2=0.999,
+    eps=1e-8,
+    N_max=1000,
+    score_threshold=1e-5,
+    param_change_threshold=1e-3,
+    verbose=False,
+):
+    """
+    Optimize the parameters to maximize a score function using AdamW.
+    See [https://arxiv.org/pdf/1711.05101](https://arxiv.org/pdf/1711.05101).
+
+    `params_init`: inital values for the parameters
+    `grad_and_score_func`: function to calculate the gradient and score, given
+        parameters
+    `reg_grad_func`: function to calculate the gradient of the regularization,
+        given parameters
+    `alpha`: step size (default: `1e-3`)
+    `beta1`: decay coefficient for first moment (default: `0.9`)
+    `beta2`: decay coefficient for second moment (default: `0.999`)
+    `eps`: epsilon value to avoid division by zero (default: `1e-8`)
+    `N_max`: maximum number of iterations (default: `1000`)
+    `score_threshold`: relative score difference needed for convergence
+        (default: `1e-5`)
+    `param_change_threshold`: convergence is reached when all parameter change
+        less than this threshold (default: `1e-3`)
+    `verbose`: Print some intermediate information (default: `False`)
+    """
+
+    # Initialization
+    params = np.copy(params_init)
+    m = np.zeros_like(params)
+    v = np.zeros_like(params)
+
+    s_prev = -np.inf
+    for t in range(1, N_max + 1):
+        g, s = grad_and_score_func(params)
+
+        m = beta1 * m + (1 - beta1) * g
+        v = beta2 * v + (1 - beta2) * g**2
+
+        mhat = m / (1 - beta1**t)
+        vhat = v / (1 - beta2**t)
+
+        step = alpha * (mhat / (np.sqrt(vhat) + eps) - reg_grad_func(params))
+
+        params += step
+
+        if verbose:
+            print(f"{t} - {s}")
+
+        # convergence checks
+        if np.abs(s_prev - s) / np.abs(s_prev) < score_threshold:
+            if verbose:
+                print(f"Converged due to score")
+            break
+        if np.max(np.abs(step)) < param_change_threshold:
+            if verbose:
+                print(f"Converged due to parameter change")
+            break
+        s_prev = s
+
+    return params

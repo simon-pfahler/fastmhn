@@ -147,6 +147,27 @@ def forward_substitution(lower_triangular_operator, rhs):
     return res
 
 
+def backward_substitution(upper_triangular_operator, rhs):
+    """
+    Calculates the solution of the linear equation Ux=b for an upper triangular
+    matrix U, given as an operator.
+
+    `upper_triangular_operator`: function that takes a vector `x` and returns
+        `Ux`
+    `rhs`: right-hand side of the linear equation
+    """
+    res = np.zeros_like(rhs)
+    single = np.zeros_like(rhs)
+    single[-1] = 1
+    res[-1] = rhs[-1] / upper_triangular_operator(single)[-1]
+    for i in range(2, len(rhs) + 1):
+        res[-i] = rhs[-i] - upper_triangular_operator(res)[-i]
+        single = np.zeros_like(rhs)
+        single[-i] = 1
+        res[-i] /= upper_triangular_operator(single)[-i]
+    return res
+
+
 def jacobi(op_diag, op_offdiag, rhs, iterations=None):
     """
     Approximates the solution of the linear equation Ax=b for a matrix A, given
@@ -162,12 +183,12 @@ def jacobi(op_diag, op_offdiag, rhs, iterations=None):
     if iterations == None:
         iterations = len(rhs).bit_length()
 
-    res = np.ones_like(rhs) / len(rhs)
+    res = np.zeros_like(rhs)
 
     dg = op_diag(np.ones_like(res))
 
     for i in range(iterations):
-        res = rhs + op_offdiag(res)
+        res = rhs - op_offdiag(res)
         res /= dg
 
     return res
@@ -202,27 +223,6 @@ def get_score_offset(data, weights=None):
     return offset
 
 
-def backward_substitution(upper_triangular_operator, rhs):
-    """
-    Calculates the solution of the linear equation Ux=b for an upper triangular
-    matrix U, given as an operator.
-
-    `upper_triangular_operator`: function that takes a vector `x` and returns
-        `Ux`
-    `rhs`: right-hand side of the linear equation
-    """
-    res = np.zeros_like(rhs)
-    single = np.zeros_like(rhs)
-    single[-1] = 1
-    res[-1] = rhs[-1] / upper_triangular_operator(single)[-1]
-    for i in range(2, len(rhs) + 1):
-        res[-i] = rhs[-i] - upper_triangular_operator(res)[-i]
-        single = np.zeros_like(rhs)
-        single[-i] = 1
-        res[-i] /= upper_triangular_operator(single)[-i]
-    return res
-
-
 def cmhn_from_omhn(theta_omhn):
     """
     Create the equivalent cMHN from an oMHN.
@@ -230,14 +230,8 @@ def cmhn_from_omhn(theta_omhn):
     `theta_omhn`: observation MHN theta matrix
     """
     d = theta_omhn.shape[1]
-    ctheta = np.zeros((d, d))
-    for i in range(d):
-        for j in range(d):
-            if i == j:
-                ctheta[i, j] = theta_omhn[i, j]
-            else:
-                ctheta[i, j] = theta_omhn[i, j] - theta_omhn[d, j]
-
+    ctheta = theta_omhn[:d] - theta_omhn[d]
+    np.fill_diagonal(ctheta, np.diag(theta_omhn[:d]))
     return ctheta
 
 

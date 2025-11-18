@@ -153,7 +153,7 @@ def apply_eye_minus_Q_offdiag(theta, x, transpose=False):
                     v[mask0] = 0
             else:
                 v[mask1] *= bigTheta[i, j]
-        b += v
+        b -= v
     return b
 
 

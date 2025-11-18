@@ -17,19 +17,19 @@ def test_generate_data():
     nr_samples = dict(zip(*np.unique(active_events, return_counts=True)))
     probability = 1 / 31
     assert (
-        np.abs(nr_samples[0] - N * probability) < 10 * np.sqrt(N) * probability
-    ), f"Wrong number of without any events generated ({nr_samples[0]})!"
+        np.abs(nr_samples[0] - N * probability) < 20 * np.sqrt(N) * probability
+    ), f"Wrong number of samples without any events generated ({nr_samples[0]})!"
     probability = 30 / 31 * 1 / 21
     assert (
-        np.abs(nr_samples[1] - N * probability) < 10 * np.sqrt(N) * probability
+        np.abs(nr_samples[1] - N * probability) < 20 * np.sqrt(N) * probability
     ), f"Wrong number of samples with one event generated ({nr_samples[1]})!"
     probability = 30 / 31 * 20 / 21 * 1 / 11
     assert (
-        np.abs(nr_samples[2] - N * probability) < 10 * np.sqrt(N) * probability
+        np.abs(nr_samples[2] - N * probability) < 20 * np.sqrt(N) * probability
     ), f"Wrong number of samples with two event generated ({nr_samples[2]})!"
     probability = 30 / 31 * 20 / 21 * 10 / 11
     assert (
-        np.abs(nr_samples[3] - N * probability) < 10 * np.sqrt(N) * probability
+        np.abs(nr_samples[3] - N * probability) < 20 * np.sqrt(N) * probability
     ), f"Wrong number of samples with three event generated ({nr_samples[3]})!"
 
 

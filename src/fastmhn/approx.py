@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from joblib import Parallel, delayed
 
@@ -24,7 +26,11 @@ def __get_approx_gradient_and_score_contributions(
     def process_patient(nr_patient):
         # exact calculation if possible
         if np.sum(data[nr_patient]) <= max_cluster_size:
-            g, s = gradient_and_score(theta, data[nr_patient : nr_patient + 1])
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                g, s = gradient_and_score(
+                    theta, data[nr_patient : nr_patient + 1]
+                )
             g *= weights[nr_patient]
             s *= weights[nr_patient]
             return g, s
@@ -39,10 +45,12 @@ def __get_approx_gradient_and_score_contributions(
         g_total = np.zeros_like(theta)
         s_total = 0
         for cluster in clustering:
-            g, s = gradient_and_score(
-                theta[np.ix_(cluster, cluster)],
-                data[nr_patient : nr_patient + 1, cluster],
-            )
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                g, s = gradient_and_score(
+                    theta[np.ix_(cluster, cluster)],
+                    data[nr_patient : nr_patient + 1, cluster],
+                )
             s_total += s
             for cluster_i, i in enumerate(cluster):
                 for cluster_j, j in enumerate(cluster):

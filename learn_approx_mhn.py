@@ -20,12 +20,26 @@ eps = 1e-8
 reg = 1e-2
 # <<< optimization parameters
 
+# >>> Print information about dataset
+avg_MB = np.mean(np.sum(data, axis=1))
+max_MB = np.max(np.sum(data, axis=1))
+nr_samples_approx = np.sum(np.sum(data, axis=1) > mcs)
+print(
+    f"Dataset information:\n"
+    f"\t{data.shape[0]} Patients\n"
+    f"\tAverage mutational burden: {avg_MB}\n"
+    f"\tMaximum mutational burden: {max_MB}\n"
+    f"\tNumber of samples with MB > {mcs}: {nr_samples_approx}"
+)
+# <<< Print information about dataset
+
 theta = torch.tensor(
     fastmhn.utility.create_indep_model(data), requires_grad=True
 )
 
 optimizer = torch.optim.Adam([theta], lr=alpha, betas=(beta1, beta2), eps=eps)
 
+# training loop
 for t in range(nr_iterations):
     optimizer.zero_grad()
 
@@ -40,6 +54,4 @@ for t in range(nr_iterations):
 
     optimizer.step()
 
-with open(results_filename, "w") as f:
-    for i in range(theta.shape[0]):
-        f.write(" ".join(map(str, theta.numpy()[i])) + "\n")
+np.savetxt(results_filename, theta.numpy())

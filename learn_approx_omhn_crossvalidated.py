@@ -22,9 +22,24 @@ mcs = 25
 k = 5  # level of cross-validation
 # <<< optimization parameters
 
+# >>> Print information about dataset
+avg_MB = np.mean(np.sum(data, axis=1))
+max_MB = np.max(np.sum(data, axis=1))
+nr_samples_approx = np.sum(np.sum(data, axis=1) > mcs)
+print(
+    f"Dataset information:\n"
+    f"\t{data.shape[0]} Patients\n"
+    f"\tAverage mutational burden: {avg_MB}\n"
+    f"\tMaximum mutational burden: {max_MB}\n"
+    f"\tNumber of samples with MB > {mcs}: {nr_samples_approx}"
+)
+# <<< Print information about dataset
+
 # >>> shuffle data
 rng = np.random.default_rng(42)
-rng.shuffle(data, axis=0)
+shuffled_indices = np.arange(data.shape[0])
+rng.shuffle(shuffled_indices)
+data = data[shuffled_indices, :]
 # <<< shuffle data
 
 # >>> get fold sizes for cross-validation
@@ -32,6 +47,7 @@ fold_sizes = (N // k) * np.ones(k, dtype=int)
 fold_sizes[: N % k] += 1
 # <<< get fold sizes for cross-validation
 
+score_offset = fastmhn.utility.get_score_offset(data, weights)
 average_validation_score = 0
 
 # loop over all subsamples
@@ -57,6 +73,7 @@ for k_index in range(k):
         [theta], lr=alpha, betas=(beta1, beta2), eps=eps
     )
 
+    # training loop
     for t in range(nr_iterations):
         optimizer.zero_grad()
 
@@ -83,28 +100,21 @@ for k_index in range(k):
 
         optimizer.step()
 
-    with open(
-        f"{results_filename[:-4]}_fold{k_index}{results_filename[-4:]}", "w"
-    ) as f:
-        for i in range(theta.shape[0]):
-            f.write(" ".join(map(str, theta.numpy()[i])) + "\n")
-
     # get final score
-    # create MHN theta matrix equivalent to current oMHN
-    ctheta = np.zeros((d, d))
-    for i in range(d):
-        for j in range(d):
-            if i == j:
-                ctheta[i, j] = theta[i, j]
-            else:
-                ctheta[i, j] = theta[i, j] - theta[d, j]
+    ctheta = fastmhn.utility.cmhn_from_omhn(theta)
 
     curr_validation_score = fastmhn.approx.approx_gradient_and_score(
         ctheta, data_val, max_cluster_size=mcs
     )[1]
     average_validation_score += curr_validation_score
 
-    print(f"Fold {k_index} finished, validation score: {curr_validation_score}")
+    print(
+        f"Fold {k_index} finished, validation score: "
+        f"{curr_validation_score} (offset {score_offset})"
+    )
 
 average_validation_score /= k
-print(f"Average validation score: {average_validation_score}")
+print(
+    f"Group {sys.argv[1]}: Average validation score for reg {reg:.0e}: "
+    f"{average_validation_score} (offset {score_offset})"
+)

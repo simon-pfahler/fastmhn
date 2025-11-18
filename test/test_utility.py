@@ -118,3 +118,29 @@ assert np.all(
     np.diag(omhn[:d]) == np.diag(cmhn)
 ), f"Diagonal entries of oMHN and equivalent cMHN do not match!"
 # <<< test cmhn_from_omhn
+
+
+# >>> test adamW
+def grad_and_score_func(params):
+    s = -((params[0] - 0.5) ** 2) - (2 * params[1] - 3) ** 2
+    g = np.array([-2 * (params[0] - 0.5), -4 * (2 * params[1] - 3)])
+    return g, s
+
+
+def reg_grad_func(params):
+    return 0
+
+
+params_init = np.ones(2)
+params_opt = fastmhn.utility.adamW(
+    params_init,
+    grad_and_score_func=grad_and_score_func,
+    reg_grad_func=reg_grad_func,
+    N_max=10000,
+    param_change_threshold=1e-12,
+    score_threshold=1e-12,
+)
+assert (
+    np.linalg.norm(params_opt - np.array([0.5, 1.5])) < 1e-8
+), f"Optimum found by AdamW is wrong!"
+# <<< test adamW

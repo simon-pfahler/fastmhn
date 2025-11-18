@@ -1,0 +1,14 @@
+stages:
+  - test
+
+test:
+  image: python:3.11
+  stage: test
+  before_script:
+    - apt-get update --yes
+    - apt-get install --yes meson ninja-build build-essential
+    - pip install --upgrade pip
+    - pip install pytest
+    - pip install .
+  script:
+    - pytest test

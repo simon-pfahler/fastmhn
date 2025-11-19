@@ -275,7 +275,8 @@ def adamW(
     v = np.zeros_like(params)
 
     s_prev = -np.inf
-    for t in range(1, N_max + 1):
+    t = 1
+    while t <= N_max:
         g, s = grad_and_score_func(params)
 
         m = beta1 * m + (1 - beta1) * g
@@ -292,15 +293,17 @@ def adamW(
             print(f"{t} - {s}")
 
         # convergence checks
-        if np.abs(s_prev - s) / np.abs(s_prev) < score_threshold:
-            if verbose:
-                print(f"Optimization stopped due to score")
-            break
-        if np.max(np.abs(step)) < param_change_threshold:
-            if verbose:
-                print(f"Optimization stopped due to parameter change")
-            break
+        if t > 1:
+            if np.abs(s_prev - s) / np.abs(s_prev) < score_threshold:
+                if verbose:
+                    print(f"Optimization stopped due to score")
+                break
+            if np.max(np.abs(step)) < param_change_threshold:
+                if verbose:
+                    print(f"Optimization stopped due to parameter change")
+                break
         s_prev = s
+        t += 1
 
     if t == N_max:
         if verbose:
@@ -349,7 +352,8 @@ def adam(
     v = np.zeros_like(params)
 
     s_prev = -np.inf
-    for t in range(1, N_max + 1):
+    t = 1
+    while t <= N_max:
         g, s = grad_and_score_func(params)
 
         g += reg_grad_func(params)
@@ -368,15 +372,17 @@ def adam(
             print(f"{t} - {s}")
 
         # convergence checks
-        if np.abs(s_prev - s) / np.abs(s_prev) < score_threshold:
-            if verbose:
-                print(f"Optimization stopped due to score")
-            break
-        if np.max(np.abs(step)) < param_change_threshold:
-            if verbose:
-                print(f"Optimization stopped due to parameter change")
-            break
+        if t > 1:
+            if np.abs(s_prev - s) / np.abs(s_prev) < score_threshold:
+                if verbose:
+                    print(f"Optimization stopped due to score")
+                break
+            if np.max(np.abs(step)) < param_change_threshold:
+                if verbose:
+                    print(f"Optimization stopped due to parameter change")
+                break
         s_prev = s
+        t += 1
 
     if t == N_max:
         if verbose:

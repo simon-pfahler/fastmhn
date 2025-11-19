@@ -26,6 +26,35 @@ def learn_mhn(
     """
 
     d = data.shape[1]
+    N = data.shape[0]
+
+    # >>> handle absent events
+    if np.any(np.sum(data, axis=0) == 0):
+        indices = np.where(np.sum(data, axis=0) == 0)[0]
+        subdata = np.delete(data, indices, axis=1)
+
+        if theta_init is not None:
+            subtheta_init = np.delete(
+                np.delete(theta_init, indices, axis=0), indices, axis=1
+            )
+        else:
+            subtheta_init = None
+        subtheta = learn_mhn(
+            subdata, reg, gradient_and_score_params, subtheta_init, adam_params
+        )
+
+        theta = np.zeros((d, d))
+
+        rows_and_cols = [i for i in range(d) if i not in indices]
+
+        theta[np.ix_(rows_and_cols, rows_and_cols)] = subtheta
+
+        for i in indices:
+            theta[i, i] = np.log(np.log(2) / N)
+        # MISSING: set the diagonal entries to sensible values
+
+        return theta
+    # <<< handle absent events
 
     # >>> initialization
     if theta_init is None:
@@ -80,6 +109,36 @@ def learn_omhn(
     """
 
     d = data.shape[1]
+    N = data.shape[0]
+
+    # >>> handle absent events
+    if np.any(np.sum(data, axis=0) == 0):
+        indices = np.where(np.sum(data, axis=0) == 0)[0]
+        subdata = np.delete(data, indices, axis=1)
+
+        if theta_init is not None:
+            subtheta_init = np.delete(
+                np.delete(theta_init, indices, axis=0), indices, axis=1
+            )
+        else:
+            subtheta_init = None
+        subtheta = learn_omhn(
+            subdata, reg, gradient_and_score_params, subtheta_init, adam_params
+        )
+
+        theta = np.zeros((d + 1, d))
+
+        rows = [i for i in range(d + 1) if i not in indices]
+        cols = [i for i in range(d) if i not in indices]
+
+        theta[np.ix_(rows, cols)] = subtheta
+
+        for i in indices:
+            theta[i, i] = np.log(np.log(2) / N)
+        # MISSING: set the diagonal entries to sensible values
+
+        return theta
+    # <<< handle absent events
 
     # >>> initialization
     if theta_init is None:

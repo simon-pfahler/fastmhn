@@ -3,6 +3,7 @@ import numpy as np
 import fastmhn
 
 rng = np.random.default_rng(42)
+np.random.seed(43)
 
 # >>> setup
 d = 3

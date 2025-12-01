@@ -4,6 +4,8 @@ from mhn.training.state_containers import StateContainer
 
 import fastmhn
 
+np.random.seed(43)
+
 # >>> setup
 d = 3
 theta = np.random.normal(size=(d, d))

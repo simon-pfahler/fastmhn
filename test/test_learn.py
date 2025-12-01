@@ -3,6 +3,7 @@ import numpy as np
 import fastmhn
 
 rng = np.random.default_rng(42)
+np.random.seed(43)
 
 # >>> setup
 d = 3
@@ -33,7 +34,7 @@ def test_learn_mhn_regularization():
     adam_params = {"N_max": 10, "verbose": False}
 
     theta_unreg = fastmhn.learn.learn_mhn(data, reg=0, adam_params=adam_params)
-    theta_reg = fastmhn.learn.learn_mhn(data, reg=1e-1, adam_params=adam_params)
+    theta_reg = fastmhn.learn.learn_mhn(data, reg=5e-2, adam_params=adam_params)
 
     assert (
         np.linalg.norm(theta_reg - np.diag(np.diag(theta_reg)))
@@ -85,7 +86,7 @@ def test_learn_omhn_regularization():
 
     theta_unreg = fastmhn.learn.learn_omhn(data, reg=0, adam_params=adam_params)
     theta_reg = fastmhn.learn.learn_omhn(
-        data, reg=1e-1, adam_params=adam_params
+        data, reg=5e-2, adam_params=adam_params
     )
 
     theta_unreg[:d] -= np.diag(np.diag(theta_unreg[:d]))

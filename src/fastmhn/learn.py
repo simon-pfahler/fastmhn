@@ -7,6 +7,7 @@ from .utility import adam, cmhn_from_omhn, create_indep_model
 
 def learn_mhn(
     data,
+    weights=None,
     reg=1e-2,
     gradient_and_score_params={},
     theta_init=None,
@@ -16,6 +17,9 @@ def learn_mhn(
     Learn an MHN given some data.
 
     `data`: Nxd matrix containing the dataset
+    `weights`: array of length N, used set the influence of individual samples
+        on the score and gradient, default is `None`, which uses a weight of 1
+        for all samples
     `reg`: Regularization strength
     `gradient_and_score_params`: Parameters passed to gradient_and_score call
     `theta_init`: Initial theta, default is the independence model
@@ -40,7 +44,12 @@ def learn_mhn(
         else:
             subtheta_init = None
         subtheta = learn_mhn(
-            subdata, reg, gradient_and_score_params, subtheta_init, adam_params
+            subdata,
+            weights,
+            reg,
+            gradient_and_score_params,
+            subtheta_init,
+            adam_params,
         )
 
         theta = np.zeros((d, d))
@@ -58,7 +67,7 @@ def learn_mhn(
 
     # >>> initialization
     if theta_init is None:
-        theta_init = create_indep_model(data)
+        theta_init = create_indep_model(data, weights=weights)
 
     gradient_and_score_params.setdefault(
         "clustering_algorithm", hierarchical_clustering
@@ -75,7 +84,7 @@ def learn_mhn(
     # <<< initialization
 
     grad_and_score_func = lambda theta: approx_gradient_and_score(
-        theta, data, **gradient_and_score_params
+        theta, data, weights=weights, **gradient_and_score_params
     )
 
     regularization_mask = np.ones_like(theta_init, dtype=bool)
@@ -90,6 +99,7 @@ def learn_mhn(
 
 def learn_omhn(
     data,
+    weights=None,
     reg=1e-2,
     gradient_and_score_params={},
     theta_init=None,
@@ -99,6 +109,9 @@ def learn_omhn(
     Learn an MHN given some data.
 
     `data`: Nxd matrix containing the dataset
+    `weights`: array of length N, used set the influence of individual samples
+        on the score and gradient, default is `None`, which uses a weight of 1
+        for all samples
     `reg`: Regularization strength
     `gradient_and_score_params`: Parameters passed to gradient_and_score call
     `theta_init`: Initial theta, default is the independence model
@@ -123,7 +136,12 @@ def learn_omhn(
         else:
             subtheta_init = None
         subtheta = learn_omhn(
-            subdata, reg, gradient_and_score_params, subtheta_init, adam_params
+            subdata,
+            weights,
+            reg,
+            gradient_and_score_params,
+            subtheta_init,
+            adam_params,
         )
 
         theta = np.zeros((d + 1, d))
@@ -143,7 +161,7 @@ def learn_omhn(
     # >>> initialization
     if theta_init is None:
         theta_init = np.zeros((d + 1, d))
-        theta_init[:d] = create_indep_model(data)
+        theta_init[:d] = create_indep_model(data, weights=weights)
 
     gradient_and_score_params.setdefault(
         "clustering_algorithm", hierarchical_clustering
@@ -163,7 +181,7 @@ def learn_omhn(
         ctheta = cmhn_from_omhn(theta)
         g = np.zeros_like(theta)
         g[:d], s = approx_gradient_and_score(
-            ctheta, data, **gradient_and_score_params
+            ctheta, data, weights=weights, **gradient_and_score_params
         )
 
         g[d] = -np.einsum("ij->j", g[:d] * (1 - np.eye(g.shape[1])))

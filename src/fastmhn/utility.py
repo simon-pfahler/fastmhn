@@ -11,15 +11,21 @@ def get_subdata(data, columns):
     return data[:, columns]
 
 
-def create_indep_model(data):
+def create_indep_model(data, weights=None):
     """
     Creates the independence model for a given dataset
 
     `data`: Nxd matrix containing the dataset
+    `weights`: array of length N, used set the influence of individual samples
+        on the score and gradient, default is `None`, which uses a weight of 1
+        for all samples
     """
+    if weights is None:
+        weights = np.ones(data.shape[0])
+
     d = data.shape[1]
     theta = np.zeros((d, d))
-    f = np.mean(data, axis=0)
+    f = np.sum(data * np.expand_dims(weights, -1), axis=0) / np.sum(weights)
     for i in range(d):
         theta[i, i] = np.log(f[i] / (1 - f[i]))
     return theta

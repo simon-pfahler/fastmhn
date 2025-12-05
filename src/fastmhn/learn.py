@@ -26,7 +26,6 @@ def learn_mhn(
     `clustering_algorithm`: Clustering algorithm to use, default is
         `hierarchical_clustering` from `fastmhn.clustering`
     `adam_params`: Parameters passed to adam
-    `verbose`: Print intermediate information (default: `False`)
     """
 
     d = data.shape[1]
@@ -118,7 +117,6 @@ def learn_omhn(
     `clustering_algorithm`: Clustering algorithm to use, default is
         `hierarchical_clustering` from `fastmhn.clustering`
     `adam_params`: Parameters passed to adam
-    `verbose`: Print intermediate information (default: `False`)
     """
 
     d = data.shape[1]

@@ -1,3 +1,5 @@
+[![Test](https://img.shields.io/github/actions/workflow/status/simon-pfahler/fastmhn/test.yml.svg?branch=main&label=test)](https://github.com/simon-pfahler/fastmhn/test.yml)
+
 # FastMHN - Fast inference of MHNs
 
 This project aims to allow for the fast inference of MHNs through suitable rank-1 approximations of the time-marginalized probability distributions.

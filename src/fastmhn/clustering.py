@@ -105,6 +105,12 @@ def hierarchical_clustering(
                 )
                 <= max_size
             )
+        if (
+            len(clustering[combine_clusters[0]])
+            + len(clustering[combine_clusters[1]])
+            > 256
+        ):
+            allowed = False
 
         # set corresponding distance to infinity
         if not allowed:

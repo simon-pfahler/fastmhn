@@ -24,17 +24,6 @@ def __get_approx_gradient_and_score_contributions(
 
     # calculate gradient and score contributions for each patient individually
     def process_patient(nr_patient):
-        # exact calculation if possible
-        if np.sum(data[nr_patient]) <= max_cluster_size:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                g, s = gradient_and_score(
-                    theta, data[nr_patient : nr_patient + 1]
-                )
-            g *= weights[nr_patient]
-            s *= weights[nr_patient]
-            return g, s
-
         # approximate calculation
         clustering = clustering_algorithm(
             theta,

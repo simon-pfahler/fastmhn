@@ -59,7 +59,6 @@ def learn_mhn(
 
         for i in indices:
             theta[i, i] = np.log(np.log(2) / N)
-        # MISSING: set the diagonal entries to sensible values
 
         return theta
     # <<< handle absent events
@@ -151,7 +150,6 @@ def learn_omhn(
 
         for i in indices:
             theta[i, i] = np.log(np.log(2) / N)
-        # MISSING: set the diagonal entries to sensible values
 
         return theta
     # <<< handle absent events

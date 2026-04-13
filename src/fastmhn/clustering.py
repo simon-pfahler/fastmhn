@@ -44,6 +44,13 @@ def hierarchical_clustering(
 
     # we store inverse cluster distances because many distances are infinity
     inv_cluster_distances = np.zeros((len(clustering), len(clustering)))
+    # add tiny random noise so we get clusters of size >1 even when theta is
+    # diagonal
+    inv_cluster_distances += np.random.normal(
+        loc=0,
+        scale=1e-5,
+        size=inv_cluster_distances.shape,
+    )
     for i in range(len(clustering)):
         for j in range(i):
             inv_cluster_distances[i, j] = max(
@@ -114,8 +121,8 @@ def hierarchical_clustering(
 
         # set corresponding distance to infinity
         if not allowed:
-            inv_cluster_distances[combine_clusters] = 0
-            inv_cluster_distances[combine_clusters[::-1]] = 0
+            inv_cluster_distances[combine_clusters[0], combine_clusters[1]] = 0
+            inv_cluster_distances[combine_clusters[1], combine_clusters[0]] = 0
             continue
 
         # update the distance matrix

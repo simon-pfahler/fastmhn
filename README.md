@@ -1,4 +1,4 @@
-[![Test](https://img.shields.io/github/actions/workflow/status/simon-pfahler/fastmhn/test.yml.svg?branch=main&label=test)](https://github.com/simon-pfahler/fastmhn/test.yml)
+![Test](https://img.shields.io/github/actions/workflow/status/simon-pfahler/fastmhn/test.yml.svg?branch=main&label=test)
 
 # FastMHN - Fast inference of MHNs
 

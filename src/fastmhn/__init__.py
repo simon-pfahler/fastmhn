@@ -1,7 +1,7 @@
 """
 fastmhn -- Fast inference of MHN (Mutational Hierarchical Networks) models.
 
-Version: 0.0.1
+Version: 1.0.0
 
 Modules
 -------
@@ -13,10 +13,22 @@ clustering  : Hierarchical clustering algorithms
 learn       : Learning algorithms (Adam, AdamW) and model fitting
 """
 
-__version__ = "0.0.1"
+__version__ = "1.0.0"
 
 from . import approx, clustering, exact, explicit, learn, utility
-
+from .approx import approx_gradient_and_score
+from .clustering import hierarchical_clustering
+from .exact import gradient_and_score
+from .explicit import (
+    apply_eye_minus_Q,
+    apply_eye_minus_Q_diag,
+    apply_eye_minus_Q_offdiag,
+    apply_Qdiff_ii,
+    calculate_pTheta,
+    create_full_Q,
+    score,
+)
+from .learn import learn_mhn, learn_omhn
 from .utility import (
     adam,
     adamW,
@@ -31,24 +43,6 @@ from .utility import (
     get_subdata,
     jacobi,
 )
-
-from .exact import gradient_and_score
-
-from .explicit import (
-    apply_Qdiff_ii,
-    apply_eye_minus_Q,
-    apply_eye_minus_Q_diag,
-    apply_eye_minus_Q_offdiag,
-    calculate_pTheta,
-    create_full_Q,
-    score,
-)
-
-from .approx import approx_gradient_and_score
-
-from .clustering import hierarchical_clustering
-
-from .learn import learn_mhn, learn_omhn
 
 __all__ = [
     # utility

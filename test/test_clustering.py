@@ -1,12 +1,13 @@
 import numpy as np
+import pytest
 
 import fastmhn
 
-rng = np.random.default_rng(42)
-np.random.seed(43)
 
-
-# >>> setup
+@pytest.fixture
+def rng_clustering():
+    """Provide a seeded numpy random generator for clustering tests."""
+    return np.random.default_rng(42)
 
 
 def get_clustering_with_seed(theta, seed=42, **kwargs):
@@ -15,14 +16,10 @@ def get_clustering_with_seed(theta, seed=42, **kwargs):
     return fastmhn.clustering.hierarchical_clustering(theta, **kwargs)
 
 
-# <<< setup
-
-
-def test_clustering_returns_clusters():
+def test_clustering_returns_clusters(rng_clustering):
     """Test that clustering returns valid clusters."""
-    np.random.seed(43)
     d = 10
-    theta = rng.normal(size=(d, d))
+    theta = rng_clustering.normal(size=(d, d))
     clustering = fastmhn.clustering.hierarchical_clustering(
         theta, max_size=5, verbose=False
     )
@@ -42,11 +39,10 @@ def test_clustering_returns_clusters():
         ), "Cluster elements should be integers"
 
 
-def test_clustering_covers_all_events():
+def test_clustering_covers_all_events(rng_clustering):
     """Test that all events are in exactly one cluster."""
-    np.random.seed(43)
     d = 10
-    theta = rng.normal(size=(d, d))
+    theta = rng_clustering.normal(size=(d, d))
     clustering = fastmhn.clustering.hierarchical_clustering(
         theta, max_size=10, verbose=False
     )
@@ -62,11 +58,10 @@ def test_clustering_covers_all_events():
     ), "All events should be in exactly one cluster"
 
 
-def test_clustering_size_constraint():
+def test_clustering_size_constraint(rng_clustering):
     """Test that clusters respect max_size constraint."""
-    np.random.seed(43)
     d = 20
-    theta = rng.normal(size=(d, d))
+    theta = rng_clustering.normal(size=(d, d))
     max_size = 5
     clustering = fastmhn.clustering.hierarchical_clustering(
         theta, max_size=max_size, verbose=False
@@ -76,11 +71,10 @@ def test_clustering_size_constraint():
         assert len(c) <= max_size, f"Cluster {c} has size {len(c)} > {max_size}"
 
 
-def test_clustering_size_constraint_with_active_events():
+def test_clustering_size_constraint_with_active_events(rng_clustering):
     """Test that clusters respect max_size constraint with active_events."""
-    np.random.seed(43)
     d = 10
-    theta = rng.normal(size=(d, d))
+    theta = rng_clustering.normal(size=(d, d))
     active_events = [0, 1, 2, 3, 4]
     max_size = 3
     clustering = fastmhn.clustering.hierarchical_clustering(
@@ -105,11 +99,10 @@ def test_clustering_size_constraint_with_active_events():
         raise AssertionError("e1 and e2 should be in the same cluster")
 
 
-def test_clustering_e1_e2_in_same_cluster():
+def test_clustering_e1_e2_in_same_cluster(rng_clustering):
     """Test that e1 and e2 end up in the same cluster."""
-    np.random.seed(43)
     d = 10
-    theta = rng.normal(size=(d, d))
+    theta = rng_clustering.normal(size=(d, d))
     e1, e2 = 3, 7
     clustering = fastmhn.clustering.hierarchical_clustering(
         theta, e1=e1, e2=e2, max_size=8, verbose=False
@@ -130,9 +123,8 @@ def test_clustering_e1_e2_in_same_cluster():
 
 def test_clustering_deterministic_with_seed():
     """Test that clustering is deterministic when random seed is fixed."""
-    np.random.seed(43)
     d = 8
-    theta = rng.normal(size=(d, d))
+    theta = np.random.default_rng(42).normal(size=(d, d))
 
     clustering1 = get_clustering_with_seed(theta, seed=123, max_size=5)
     clustering2 = get_clustering_with_seed(theta, seed=123, max_size=5)
@@ -146,11 +138,10 @@ def test_clustering_deterministic_with_seed():
     ), "Same seed should give same clustering"
 
 
-def test_clustering_256_hard_limit():
+def test_clustering_256_hard_limit(rng_clustering):
     """Test that no cluster exceeds 256 elements."""
-    np.random.seed(43)
     d = 300
-    theta = rng.normal(size=(d, d))
+    theta = rng_clustering.normal(size=(d, d))
     clustering = fastmhn.clustering.hierarchical_clustering(
         theta, max_size=d, verbose=False
     )
@@ -161,7 +152,6 @@ def test_clustering_256_hard_limit():
 
 def test_clustering_single_event():
     """Test edge case with single event."""
-    np.random.seed(43)
     d = 1
     theta = np.array([[1.0]])
     clustering = fastmhn.clustering.hierarchical_clustering(
@@ -172,11 +162,10 @@ def test_clustering_single_event():
     assert clustering[0] == [0], "Cluster should contain event 0"
 
 
-def test_clustering_no_e1_e2():
+def test_clustering_no_e1_e2(rng_clustering):
     """Test clustering without specifying e1 and e2."""
-    np.random.seed(43)
     d = 10
-    theta = rng.normal(size=(d, d))
+    theta = rng_clustering.normal(size=(d, d))
     clustering = fastmhn.clustering.hierarchical_clustering(
         theta, max_size=5, verbose=False
     )
@@ -189,11 +178,10 @@ def test_clustering_no_e1_e2():
     assert sorted(all_events) == list(range(d))
 
 
-def test_clustering_verbose_output():
+def test_clustering_verbose_output(rng_clustering):
     """Test that verbose mode doesn't crash."""
-    np.random.seed(43)
     d = 5
-    theta = rng.normal(size=(d, d))
+    theta = rng_clustering.normal(size=(d, d))
     clustering = fastmhn.clustering.hierarchical_clustering(
         theta, max_size=3, verbose=True
     )
@@ -207,17 +195,16 @@ def test_clustering_verbose_output():
 
 def test_clustering_preserves_all_events():
     """Test that clustering always covers all events exactly once."""
-    np.random.seed(43)
     for d in range(1, 8):
-        theta = rng.normal(size=(d, d))
+        theta = np.random.default_rng(42).normal(size=(d, d))
         for max_size in [1, 2, d]:
             clustering = get_clustering_with_seed(theta, seed=42, max_size=max_size)
-            
+
             # Flatten all clusters
             all_events = []
             for c in clustering:
                 all_events.extend(c)
-            
+
             # Each event 0..d-1 should appear exactly once
             assert sorted(all_events) == list(range(d)), (
                 f"Events not preserved for d={d}, max_size={max_size}"
@@ -226,13 +213,12 @@ def test_clustering_preserves_all_events():
 
 def test_clustering_size_monotonic():
     """Test that smaller max_size produces more clusters."""
-    np.random.seed(43)
     d = 10
-    theta = rng.normal(size=(d, d))
-    
+    theta = np.random.default_rng(42).normal(size=(d, d))
+
     clustering_large = get_clustering_with_seed(theta, seed=42, max_size=d)
     clustering_small = get_clustering_with_seed(theta, seed=42, max_size=2)
-    
+
     assert len(clustering_small) >= len(clustering_large), (
         f"Smaller max_size should produce at least as many clusters"
     )
@@ -240,11 +226,10 @@ def test_clustering_size_monotonic():
 
 def test_clustering_disjoint_clusters():
     """Test that clusters are disjoint (no overlapping events)."""
-    np.random.seed(43)
     d = 10
-    theta = rng.normal(size=(d, d))
+    theta = np.random.default_rng(42).normal(size=(d, d))
     clustering = get_clustering_with_seed(theta, seed=42, max_size=5)
-    
+
     # Check all pairs of clusters are disjoint
     for i, c1 in enumerate(clustering):
         for c2 in clustering[i + 1:]:

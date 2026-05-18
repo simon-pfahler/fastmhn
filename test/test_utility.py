@@ -2,44 +2,34 @@ import numpy as np
 
 import fastmhn
 
-rng = np.random.default_rng(42)
-np.random.seed(43)
 
-# >>> setup
-d = 3
-N = 10000
-# <<< setup
-
-
-def test_generate_data():
+def test_generate_data(N_large):
     """Test that generated data has correct distribution."""
-    np.random.seed(43)
     theta = np.diag([np.log(10), np.log(10), np.log(10)])
-    data = fastmhn.utility.generate_data(theta, N)
+    data = fastmhn.utility.generate_data(theta, N_large)
     active_events = np.sum(data, axis=1)
     nr_samples = dict(zip(*np.unique(active_events, return_counts=True)))
     probability = 1 / 31
     assert (
-        np.abs(nr_samples[0] - N * probability) < 20 * np.sqrt(N) * probability
+        np.abs(nr_samples[0] - N_large * probability) < 20 * np.sqrt(N_large) * probability
     ), f"Wrong number of samples without any events generated ({nr_samples[0]})!"
     probability = 30 / 31 * 1 / 21
     assert (
-        np.abs(nr_samples[1] - N * probability) < 20 * np.sqrt(N) * probability
+        np.abs(nr_samples[1] - N_large * probability) < 20 * np.sqrt(N_large) * probability
     ), f"Wrong number of samples with one event generated ({nr_samples[1]})!"
     probability = 30 / 31 * 20 / 21 * 1 / 11
     assert (
-        np.abs(nr_samples[2] - N * probability) < 20 * np.sqrt(N) * probability
+        np.abs(nr_samples[2] - N_large * probability) < 20 * np.sqrt(N_large) * probability
     ), f"Wrong number of samples with two event generated ({nr_samples[2]})!"
     probability = 30 / 31 * 20 / 21 * 10 / 11
     assert (
-        np.abs(nr_samples[3] - N * probability) < 20 * np.sqrt(N) * probability
+        np.abs(nr_samples[3] - N_large * probability) < 20 * np.sqrt(N_large) * probability
     ), f"Wrong number of samples with three event generated ({nr_samples[3]})!"
 
 
-def test_create_indep_model():
+def test_create_indep_model(rng, d, N):
     """Test independence model matches ground truth for uniform data."""
-    np.random.seed(43)
-    theta = np.diag(rng.normal(size=(d)))
+    theta = np.diag(rng.normal(size=d))
     data = fastmhn.utility.generate_data(theta, N)
     theta_ind = fastmhn.utility.create_indep_model(data)
     for i in range(d):
@@ -49,9 +39,8 @@ def test_create_indep_model():
         )
 
 
-def test_create_pD():
+def test_create_pD(rng, d, N):
     """Test pD creation correctness and normalization."""
-    np.random.seed(43)
     data = rng.integers(2, size=(N, d), dtype=np.int32)
     pD = fastmhn.utility.create_pD(data)
 
@@ -71,12 +60,11 @@ def test_create_pD():
     ), "create_pD values don't match slow implementation"
 
 
-def test_forward_substitution():
+def test_forward_substitution(rng, d):
     """Test forward substitution against np.linalg.solve."""
-    np.random.seed(43)
     lower_triangular_matrix = np.tril(rng.normal(size=(d, d)))
     lower_triangular_operator = lambda x: lower_triangular_matrix @ x
-    rhs = rng.normal(size=(d))
+    rhs = rng.normal(size=d)
     res = fastmhn.utility.forward_substitution(lower_triangular_operator, rhs)
     res_np = np.linalg.solve(lower_triangular_matrix, rhs)
     assert (
@@ -84,12 +72,11 @@ def test_forward_substitution():
     ), f"Forward substitution leads to wrong result!"
 
 
-def test_backward_substitution():
+def test_backward_substitution(rng, d):
     """Test backward substitution against np.linalg.solve."""
-    np.random.seed(43)
     upper_triangular_matrix = np.triu(rng.normal(size=(d, d)))
     upper_triangular_operator = lambda x: upper_triangular_matrix @ x
-    rhs = rng.normal(size=(d))
+    rhs = rng.normal(size=d)
     res = fastmhn.utility.backward_substitution(upper_triangular_operator, rhs)
     res_np = np.linalg.solve(upper_triangular_matrix, rhs)
     assert (
@@ -97,12 +84,11 @@ def test_backward_substitution():
     ), f"Backward substitution leads to wrong result!"
 
 
-def test_jacobi():
+def test_jacobi(rng, d):
     """Test Jacobi solver on diagonal and triangular matrices."""
-    np.random.seed(43)
-    diagonal_matrix = np.diag(rng.normal(size=(d)))
+    diagonal_matrix = np.diag(rng.normal(size=d))
     diagonal_operator = lambda x: diagonal_matrix @ x
-    rhs = rng.normal(size=(d))
+    rhs = rng.normal(size=d)
     res = fastmhn.utility.jacobi(
         diagonal_operator, lambda x: 0, rhs, iterations=1
     )
@@ -118,7 +104,7 @@ def test_jacobi():
     strictly_lower_triangular_operator = (
         lambda x: strictly_lower_triangular_matrix @ x
     )
-    rhs = rng.normal(size=(d))
+    rhs = rng.normal(size=d)
     res = fastmhn.utility.jacobi(
         diagonal_operator,
         strictly_lower_triangular_operator,
@@ -131,9 +117,8 @@ def test_jacobi():
     ), f"Jacobi leads to wrong result for triangular matrix!"
 
 
-def test_get_score_offset():
+def test_get_score_offset(rng, d, N):
     """Test score offset calculation for trivial and non-trivial cases."""
-    np.random.seed(43)
     # Trivial case: all samples identical
     data = np.zeros((N, d), dtype=np.int32)
     data[:, 1] = 1
@@ -167,9 +152,8 @@ def test_get_score_offset():
     ), f"Score offset with weights is wrong: {offset3} != {expected_weighted}"
 
 
-def test_cmhn_from_omhn():
+def test_cmhn_from_omhn(rng, d):
     """Test cMHN conversion from oMHN."""
-    np.random.seed(43)
     omhn = rng.normal(size=(d + 1, d))
     cmhn = fastmhn.utility.cmhn_from_omhn(omhn)
 
@@ -220,9 +204,11 @@ def test_adamW():
 
 def test_create_pD_empty_data():
     """Test pD creation with empty dataset (d=0)."""
-    np.random.seed(43)
+    import warnings
     data = np.zeros((0, 0), dtype=np.int32)
-    pD = fastmhn.utility.create_pD(data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        pD = fastmhn.utility.create_pD(data)
     assert (
         pD.shape[0] == 1
     ), f"pD should have 1 element for d=0, got {pD.shape[0]}"
@@ -230,7 +216,6 @@ def test_create_pD_empty_data():
 
 def test_create_pD_single_event():
     """Test pD creation with single event (d=1)."""
-    np.random.seed(43)
     data = np.array([[0], [1], [0], [1], [0]], dtype=np.int32)
     pD = fastmhn.utility.create_pD(data)
     assert pD.shape[0] == 2, f"pD should have 2 elements for d=1"
@@ -238,9 +223,8 @@ def test_create_pD_single_event():
     assert np.abs(pD[1] - 0.4) < 1e-12, f"pD[1] should be 0.4, got {pD[1]}"
 
 
-def test_create_pD_all_zeros():
+def test_create_pD_all_zeros(rng, d):
     """Test pD creation with all-zero data."""
-    np.random.seed(43)
     data = np.zeros((10, d), dtype=np.int32)
     pD = fastmhn.utility.create_pD(data)
     assert np.abs(pD[0] - 1) < 1e-12, f"pD[0] should be 1 for all-zero data"
@@ -249,9 +233,8 @@ def test_create_pD_all_zeros():
     ), f"Other pD entries should be 0 for all-zero data"
 
 
-def test_create_pD_all_ones():
+def test_create_pD_all_ones(rng, d):
     """Test pD creation with all-ones data."""
-    np.random.seed(43)
     data = np.ones((10, d), dtype=np.int32)
     pD = fastmhn.utility.create_pD(data)
     all_ones_index = 2**d - 1
@@ -265,7 +248,6 @@ def test_create_pD_all_ones():
 
 def test_get_score_offset_single_sample():
     """Test score offset with single sample."""
-    np.random.seed(43)
     data = np.array([[1, 0, 1]], dtype=np.int32)
     offset = fastmhn.utility.get_score_offset(data)
     # Single sample: p=1 for that sample, offset = 1 * log(1) = 0
@@ -276,7 +258,6 @@ def test_get_score_offset_single_sample():
 
 def test_get_score_offset_uniform_weights():
     """Test score offset with uniform weights."""
-    np.random.seed(43)
     data = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.int32)
     weights = np.ones(4)
     offset = fastmhn.utility.get_score_offset(data, weights=weights)
@@ -289,7 +270,6 @@ def test_get_score_offset_uniform_weights():
 
 def test_cmhn_from_omhn_single_event():
     """Test cMHN from oMHN with d=1."""
-    np.random.seed(43)
     omhn = np.array([[1.0], [0.5]])  # d=1, so omhn is (2, 1)
     cmhn = fastmhn.utility.cmhn_from_omhn(omhn)
     assert cmhn.shape == (1, 1), f"Expected (1,1), got {cmhn.shape}"
@@ -298,14 +278,12 @@ def test_cmhn_from_omhn_single_event():
 
 def test_generate_theta_d1():
     """Test theta generation with d=1."""
-    np.random.seed(43)
     theta = fastmhn.utility.generate_theta(1)
     assert theta.shape == (1, 1), f"Expected (1,1), got {theta.shape}"
 
 
-def test_create_indep_model_uniform_data():
+def test_create_indep_model_uniform_data(d):
     """Test independence model with uniform data."""
-    np.random.seed(43)
     data = np.zeros((150, d), dtype=np.int32)
     # Set each event to be present in exactly 50 samples
     data[:50, 0] = 1

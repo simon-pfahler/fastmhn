@@ -2,21 +2,13 @@ import numpy as np
 
 import fastmhn
 
-rng = np.random.default_rng(42)
-np.random.seed(43)
 
-# >>> setup
-d = 3
-N = 100
-theta = rng.normal(size=(d, d))
-data = rng.integers(2, size=(N, d), dtype=np.int32)
-pD = fastmhn.utility.create_pD(data)
-# <<< setup
-
-
-def test_approx_gradient_and_score():
+def test_approx_gradient_and_score(rng, d, N):
     """Test approximate gradient and score against exact."""
-    np.random.seed(43)
+    theta = rng.normal(size=(d, d))
+    data = rng.integers(2, size=(N, d), dtype=np.int32)
+    pD = fastmhn.utility.create_pD(data)
+
     gradient, score = fastmhn.approx.approx_gradient_and_score(
         theta, data, max_cluster_size=3
     )
@@ -29,9 +21,8 @@ def test_approx_gradient_and_score():
     ), f"Explicit gradient_and_score calculation leads to incorrect gradient!"
 
 
-def test_approx_vs_exact():
+def test_approx_vs_exact(rng, d, N):
     """Test approximate gradient and score against exact implementation."""
-    np.random.seed(43)
     test_theta = rng.normal(size=(d, d))
     test_data = rng.integers(2, size=(N, d), dtype=np.int32)
 
@@ -53,9 +44,8 @@ def test_approx_vs_exact():
 # >>> Phase 3: Property-based tests <<<
 
 
-def test_approx_score_is_negative():
+def test_approx_score_is_negative(rng, d, N):
     """Test that approx score is always negative (log probabilities)."""
-    np.random.seed(43)
     test_theta = rng.normal(size=(d, d))
     test_data = rng.integers(2, size=(N, d), dtype=np.int32)
 
@@ -66,9 +56,8 @@ def test_approx_score_is_negative():
         assert score < 0, f"Approx score should be negative, got {score}"
 
 
-def test_approx_gradient_shape():
+def test_approx_gradient_shape(rng, d, N):
     """Test that approx gradient has correct shape matching theta."""
-    np.random.seed(43)
     test_theta = rng.normal(size=(d, d))
     test_data = rng.integers(2, size=(N, d), dtype=np.int32)
 

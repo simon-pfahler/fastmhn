@@ -2,21 +2,13 @@ import numpy as np
 
 import fastmhn
 
-rng = np.random.default_rng(42)
-np.random.seed(43)
 
-# >>> setup
-d = 3
-N = 100
-theta = rng.normal(size=(d, d))
-data = rng.integers(2, size=(N, d), dtype=np.int32)
-pD = fastmhn.utility.create_pD(data)
-# <<< setup
-
-
-def test_score():
+def test_score(rng, d, N):
     """Test explicit score calculation against exact."""
-    np.random.seed(43)
+    theta = rng.normal(size=(d, d))
+    data = rng.integers(2, size=(N, d), dtype=np.int32)
+    pD = fastmhn.utility.create_pD(data)
+
     score = fastmhn.explicit.score(theta, pD)
     score_val = fastmhn.exact.gradient_and_score(theta, data)[1]
     assert (
@@ -24,9 +16,11 @@ def test_score():
     ), f"Explicit score calculation is wrong!"
 
 
-def test_gradient_and_score():
+def test_gradient_and_score(rng, d, N):
     """Test explicit gradient and score against exact."""
-    np.random.seed(43)
+    theta = rng.normal(size=(d, d))
+    data = rng.integers(2, size=(N, d), dtype=np.int32)
+
     gradient, score = fastmhn.explicit.gradient_and_score(theta, data)
     gradient_val, score_val = fastmhn.exact.gradient_and_score(theta, data)
     assert (

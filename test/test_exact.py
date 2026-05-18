@@ -4,24 +4,19 @@ from mhn.training.state_containers import StateContainer
 
 import fastmhn
 
-# >>> setup
-np.random.seed(43)
-d = 3
-theta = np.random.normal(size=(d, d))
-data = np.random.randint(0, high=2, size=(1000, d))
-pD = fastmhn.utility.create_pD(data)
 
-p0 = np.zeros(2**d)
-p0[0] = 1
-
-apply = lambda v: fastmhn.exact.apply_eye_minus_Q(theta, v, transpose=False)
-apply_T = lambda v: fastmhn.exact.apply_eye_minus_Q(theta, v, transpose=True)
-# <<< setup
-
-
-def test_gradient_and_score_explicit():
+def test_gradient_and_score_explicit(rng, d):
     """Test gradient and score against explicit Q matrix calculation."""
-    np.random.seed(43)
+    theta = rng.normal(size=(d, d))
+    data = rng.integers(0, high=2, size=(1000, d))
+    pD = fastmhn.utility.create_pD(data)
+
+    p0 = np.zeros(2**d)
+    p0[0] = 1
+
+    apply_func = lambda v: fastmhn.exact.apply_eye_minus_Q(theta, v, transpose=False)
+    apply_T_func = lambda v: fastmhn.exact.apply_eye_minus_Q(theta, v, transpose=True)
+
     gradient, score = fastmhn.exact.gradient_and_score(theta, data)
     Q = fastmhn.explicit.create_full_Q(theta)
     pT = np.linalg.solve(np.eye(2**d) - Q, p0)
@@ -44,9 +39,15 @@ def test_gradient_and_score_explicit():
             ), f"Wrong gradient at index {i}, {j} when compared to explicit calculation"
 
 
-def test_gradient_and_score_finite_differences():
+def test_gradient_and_score_finite_differences(rng, d):
     """Test gradient and score against finite differences."""
-    np.random.seed(43)
+    theta = rng.normal(size=(d, d))
+    data = rng.integers(0, high=2, size=(1000, d))
+    pD = fastmhn.utility.create_pD(data)
+
+    p0 = np.zeros(2**d)
+    p0[0] = 1
+
     gradient, score = fastmhn.exact.gradient_and_score(theta, data)
     eps = 1e-5
     fd_grad = np.zeros((d, d))
@@ -68,12 +69,11 @@ def test_gradient_and_score_finite_differences():
             ), f"Wrong gradient at index {i}, {j} when compared to finite differences"
 
 
-def test_gradient_and_score_small_d():
+def test_gradient_and_score_small_d(rng):
     """Test gradient_and_score correctness for small dimensions d=2 to 5."""
-    np.random.seed(43)
     for test_d in range(2, 6):
-        test_theta = np.random.normal(size=(test_d, test_d))
-        test_data = np.random.randint(0, high=2, size=(100, test_d))
+        test_theta = rng.normal(size=(test_d, test_d))
+        test_data = rng.integers(0, high=2, size=(100, test_d))
         test_pD = fastmhn.utility.create_pD(test_data)
 
         gradient, score = fastmhn.exact.gradient_and_score(
@@ -111,22 +111,20 @@ def test_gradient_and_score_small_d():
 # >>> Phase 3: Property-based tests <<<
 
 
-def test_score_is_negative():
+def test_score_is_negative(rng):
     """Test that score is always negative (log probabilities)."""
-    np.random.seed(43)
     for test_d in range(2, 5):
-        test_theta = np.random.normal(size=(test_d, test_d))
-        test_data = np.random.randint(0, high=2, size=(50, test_d))
+        test_theta = rng.normal(size=(test_d, test_d))
+        test_data = rng.integers(0, high=2, size=(50, test_d))
 
         _, score = fastmhn.exact.gradient_and_score(test_theta, test_data)
         assert score < 0, f"Score should be negative, got {score} for d={test_d}"
 
 
-def test_pTheta_is_probability_distribution():
+def test_pTheta_is_probability_distribution(rng):
     """Test that pTheta is a valid probability distribution (sums to 1, non-negative)."""
-    np.random.seed(43)
     for test_d in range(2, 5):
-        test_theta = np.random.normal(size=(test_d, test_d))
+        test_theta = rng.normal(size=(test_d, test_d))
 
         pTheta = fastmhn.explicit.calculate_pTheta(test_theta)
         assert np.abs(np.sum(pTheta) - 1) < 1e-10, f"pTheta doesn't sum to 1 for d={test_d}"
@@ -135,9 +133,8 @@ def test_pTheta_is_probability_distribution():
         ), f"pTheta has negative values for d={test_d}"  # Allow tiny negative due to numerical errors
 
 
-def test_gradient_zero_for_uniform_theta():
+def test_gradient_zero_for_uniform_theta(rng):
     """Test that gradient is zero when theta is diagonal with uniform base rates."""
-    np.random.seed(43)
     for test_d in range(2, 4):
         # Create uniform theta (all diagonal entries equal)
         uniform_val = -1.0

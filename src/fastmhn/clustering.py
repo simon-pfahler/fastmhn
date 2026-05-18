@@ -36,7 +36,7 @@ def hierarchical_clustering(
 
     # set active_events to the whole list if it is None
     if active_events is None:
-        active_events = list(range(d))
+        active_events = set(range(d))
 
     # fix order if it was broken by the set
     if clustering[0][0] != e1:
@@ -136,11 +136,9 @@ def hierarchical_clustering(
             combine_clusters[0]
         ]
         inv_cluster_distances[combine_clusters[0], combine_clusters[0]] = 0
-        inv_cluster_distances = np.delete(
-            np.delete(inv_cluster_distances, combine_clusters[1], axis=0),
-            combine_clusters[1],
-            axis=1,
-        )
+        keep = np.ones(inv_cluster_distances.shape[0], dtype=bool)
+        keep[combine_clusters[1]] = False
+        inv_cluster_distances = inv_cluster_distances[keep][:, keep]
 
         # update the clustering
         clustering[combine_clusters[0]] += clustering[combine_clusters[1]]

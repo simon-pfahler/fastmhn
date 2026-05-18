@@ -55,9 +55,7 @@ def __get_approx_gradient_and_score_contributions(
                     data[nr_patient : nr_patient + 1, cluster],
                 )
             s_total += s
-            for cluster_i, i in enumerate(cluster):
-                for cluster_j, j in enumerate(cluster):
-                    g_total[i, j] += g[cluster_i, cluster_j]
+            g_total[np.ix_(cluster, cluster)] += g
 
         g_total *= weights[nr_patient]
         s_total *= weights[nr_patient]

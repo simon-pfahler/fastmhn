@@ -77,6 +77,10 @@ def generate_data(thetaGT, size):
 
     data = np.zeros((size, d), dtype=np.int32)
 
+    # Precompute exp(thetaGT) once for efficiency
+    exp_theta = np.exp(thetaGT)
+    diag_exp = exp_theta.diagonal()
+
     zero_column = True
     run_nr = 0
     while run_nr < 10 and zero_column == True:
@@ -86,7 +90,7 @@ def generate_data(thetaGT, size):
             sample = np.zeros(d, dtype=np.int32)
 
             # Gillespie algorithm: add events until the sample gets observed
-            transitionRates = np.exp(np.diag(thetaGT))
+            transitionRates = diag_exp.copy()
             while True:
 
                 # get next event
@@ -103,9 +107,9 @@ def generate_data(thetaGT, size):
                     break
                 sample[newEvent] = 1
 
-                # update transition rates
+                # update transition rates - use precomputed exp_theta
                 transitionRates[newEvent] = 0
-                transitionRates *= np.exp(thetaGT[:, newEvent])
+                transitionRates *= exp_theta[:, newEvent]
 
             data[i] = sample
 
@@ -125,10 +129,10 @@ def create_pD(data):
     """
 
     d = data.shape[1]
-    pD = np.zeros(2**d)
-    for sample in data:
-        index = int("".join(map(str, sample)), 2)
-        pD[index] += 1
+    # Vectorized: convert each row to integer using bitwise operations
+    powers = 1 << np.arange(d - 1, -1, -1)
+    indices = np.dot(data, powers)
+    pD = np.bincount(indices, minlength=2**d)
     return pD / data.shape[0]
 
 
@@ -219,12 +223,19 @@ def get_score_offset(data, weights=None):
         weights = np.ones(data.shape[0])
 
     N = np.sum(weights)
-    unique_samples = np.unique(data, axis=0)
+    # Use np.unique with return_inverse for vectorized computation
+    unique_samples, inverse_indices = np.unique(
+        data, axis=0, return_inverse=True
+    )
 
-    offset = 0
-    for sample in unique_samples:
-        count = np.sum(weights[np.all(data == sample, axis=1)])
-        offset += count / N * np.log(count / N)
+    # Sum weights for each unique sample
+    counts = np.zeros(len(unique_samples))
+    for i, idx in enumerate(inverse_indices):
+        counts[idx] += weights[i]
+
+    # Vectorized computation of offset
+    p = counts / N
+    offset = np.sum(np.where(p > 0, p * np.log(p), 0))
 
     return offset
 

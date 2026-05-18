@@ -2,6 +2,26 @@ import numpy as np
 
 from .utility import create_pD, jacobi
 
+# Precompute bit masks for efficiency
+_bit_masks_cache = {}
+
+
+def _get_bit_masks(d):
+    """Get or create bit masks for a given dimension d."""
+    if d not in _bit_masks_cache:
+        n_states = 2**d
+        # For each bit position j (0 to d-1), create masks for bit (d-1-j)
+        masks_0 = []
+        masks_1 = []
+        for j in range(d):
+            bit_pos = d - 1 - j
+            mask0 = (np.arange(n_states) & (1 << bit_pos)) == 0
+            mask1 = (np.arange(n_states) & (1 << bit_pos)) != 0
+            masks_0.append(mask0)
+            masks_1.append(mask1)
+        _bit_masks_cache[d] = (np.array(masks_0), np.array(masks_1))
+    return _bit_masks_cache[d]
+
 
 def calculate_pTheta(theta):
     """
@@ -58,6 +78,10 @@ def gradient_and_score(theta, data):
     q = jacobi(op_diag, op_offdiag, pD / pTheta)
 
     gradient = np.zeros((d, d))
+
+    # Get precomputed masks for gradient computation
+    masks_0, masks_1 = _get_bit_masks(d)
+
     for i in range(d):
         h = apply_Qdiff_ii(theta, pTheta, i)
         r = q * h
@@ -65,7 +89,7 @@ def gradient_and_score(theta, data):
             if i == j:
                 gradient[i, i] = np.sum(r)
                 continue
-            mask = (np.arange(2**d) & (2**d >> (j + 1))) != 0
+            mask = masks_1[j]  # (2**d >> (j + 1)) != 0
             gradient[i, j] = np.sum(r[mask])
 
     return gradient, score
@@ -80,13 +104,18 @@ def apply_eye_minus_Q(theta, x, transpose=False):
     `transpose`: set to true if (I-Q)^T @ x should be calculated
     """
     d = theta.shape[0]
+    n_states = 2**d
     bigTheta = np.exp(theta)
+
+    # Get precomputed masks
+    masks_0, masks_1 = _get_bit_masks(d)
+
     b = x.copy()
     for i in range(d):
         v = x.copy()
         for j in range(d):
-            mask0 = (np.arange(2**d) & (2**d >> (j + 1))) == 0
-            mask1 = (np.arange(2**d) & (2**d >> (j + 1))) != 0
+            mask0 = masks_0[j]
+            mask1 = masks_1[j]
             if i == j:
                 if transpose:
                     v[mask0] = (
@@ -113,12 +142,16 @@ def apply_eye_minus_Q_diag(theta, x, transpose=False):
     """
     d = theta.shape[0]
     bigTheta = np.exp(theta)
+
+    # Get precomputed masks
+    masks_0, masks_1 = _get_bit_masks(d)
+
     b = x.copy()
     for i in range(d):
         v = x.copy()
         for j in range(d):
-            mask0 = (np.arange(2**d) & (2**d >> (j + 1))) == 0
-            mask1 = (np.arange(2**d) & (2**d >> (j + 1))) != 0
+            mask0 = masks_0[j]
+            mask1 = masks_1[j]
             if i == j:
                 v[mask0] *= -bigTheta[i, i]
                 v[mask1] = 0
@@ -138,12 +171,16 @@ def apply_eye_minus_Q_offdiag(theta, x, transpose=False):
     """
     d = theta.shape[0]
     bigTheta = np.exp(theta)
+
+    # Get precomputed masks
+    masks_0, masks_1 = _get_bit_masks(d)
+
     b = np.zeros_like(x)
     for i in range(d):
         v = x.copy()
         for j in range(d):
-            mask0 = (np.arange(2**d) & (2**d >> (j + 1))) == 0
-            mask1 = (np.arange(2**d) & (2**d >> (j + 1))) != 0
+            mask0 = masks_0[j]
+            mask1 = masks_1[j]
             if i == j:
                 if transpose:
                     v[mask0] = bigTheta[i, i] * v[mask1]
@@ -167,10 +204,14 @@ def apply_Qdiff_ii(theta, x, i):
     """
     d = theta.shape[0]
     bigTheta = np.exp(theta)
+
+    # Get precomputed masks
+    masks_0, masks_1 = _get_bit_masks(d)
+
     v = x.copy()
     for k in range(d):
-        mask0 = (np.arange(2**d) & (2**d >> (k + 1))) == 0
-        mask1 = (np.arange(2**d) & (2**d >> (k + 1))) != 0
+        mask0 = masks_0[k]
+        mask1 = masks_1[k]
         if k == i:
             v[mask0] *= -bigTheta[i, i]
             v[mask1] = -v[mask0]

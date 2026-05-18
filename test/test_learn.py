@@ -121,3 +121,36 @@ def test_learn_omhn_absent_events():
     assert (
         theta[2, 2] < theta[1, 1]
     ), f"Base rate of absent event is not smallest!"
+
+
+def test_learn_convergence():
+    """Test that MHN learning converges by verifying score increases over iterations."""
+    np.random.seed(43)
+    N = 500
+    thetaGT = fastmhn.utility.generate_theta(d)
+    data = fastmhn.utility.generate_data(thetaGT, N)
+    adam_params = {"N_max": 50, "verbose": False}
+
+    # Track scores across iterations
+    scores = []
+
+    def grad_and_score_with_tracking(theta):
+        g, s = fastmhn.exact.gradient_and_score(theta, data)
+        scores.append(s)
+        return g, s
+
+    theta_init = fastmhn.utility.create_indep_model(data)
+    regularization_mask = np.ones_like(theta_init, dtype=bool)
+    regularization_mask ^= np.eye(d, dtype=bool)
+    reg_grad_func = lambda theta: -1e-2 * regularization_mask * np.sign(theta)
+
+    fastmhn.learn.adam(
+        theta_init, grad_and_score_with_tracking, reg_grad_func, **adam_params
+    )
+
+    assert len(scores) > 1, "No iterations were recorded"
+    # Score should increase or stay roughly the same, not decrease significantly
+    for i in range(1, len(scores)):
+        assert (
+            scores[i] >= scores[0] - 1e-5
+        ), f"Score decreased from {scores[0]} to {scores[i]} at iteration {i}"

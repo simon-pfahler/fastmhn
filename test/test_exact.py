@@ -66,3 +66,43 @@ def test_gradient_and_score_finite_differences():
             assert (
                 np.abs(fd_grad[i, j] - gradient[i, j]) < 1e-10
             ), f"Wrong gradient at index {i}, {j} when compared to finite differences"
+
+
+def test_gradient_and_score_small_d():
+    """Test gradient_and_score correctness for small dimensions d=2 to 5."""
+    np.random.seed(43)
+    for test_d in range(2, 6):
+        test_theta = np.random.normal(size=(test_d, test_d))
+        test_data = np.random.randint(0, high=2, size=(100, test_d))
+        test_pD = fastmhn.utility.create_pD(test_data)
+
+        gradient, score = fastmhn.exact.gradient_and_score(
+            test_theta, test_data
+        )
+
+        # Verify against explicit Q matrix calculation
+        Q = fastmhn.explicit.create_full_Q(test_theta)
+        p0 = np.zeros(2**test_d)
+        p0[0] = 1
+        pT = np.linalg.solve(np.eye(2**test_d) - Q, p0)
+        explicit_score = np.dot(test_pD, np.log(pT))
+        assert (
+            np.abs(explicit_score - score) < 1e-10
+        ), f"Wrong score for d={test_d}"
+
+        explicit_grad = np.zeros((test_d, test_d))
+        q = np.linalg.solve(np.eye(2**test_d) - Q.T, test_pD / pT)
+        for i in range(test_d):
+            r = (
+                q * fastmhn.explicit.apply_Qdiff_ii(test_theta, pT, i)
+            ).reshape([2] * test_d)
+            for j in range(test_d):
+                if i == j:
+                    explicit_grad[i, j] = np.sum(r)
+                else:
+                    explicit_grad[i, j] = np.sum(
+                        r, axis=tuple(idx for idx in range(test_d) if idx != j)
+                    )[1]
+                assert (
+                    np.abs(explicit_grad[i, j] - gradient[i, j]) < 1e-10
+                ), f"Wrong gradient at index {i}, {j} for d={test_d}"

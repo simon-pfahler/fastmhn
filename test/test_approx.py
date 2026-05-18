@@ -48,3 +48,33 @@ def test_approx_vs_exact():
     assert (
         np.linalg.norm(approx_gradient - exact_gradient) < 1e-12
     ), f"Approx gradient differs from exact for max_cluster_size=d"
+
+
+# >>> Phase 3: Property-based tests <<<
+
+
+def test_approx_score_is_negative():
+    """Test that approx score is always negative (log probabilities)."""
+    np.random.seed(43)
+    test_theta = rng.normal(size=(d, d))
+    test_data = rng.integers(2, size=(N, d), dtype=np.int32)
+
+    for max_cluster_size in [d, d + 1]:
+        _, score = fastmhn.approx.approx_gradient_and_score(
+            test_theta, test_data, max_cluster_size=max_cluster_size
+        )
+        assert score < 0, f"Approx score should be negative, got {score}"
+
+
+def test_approx_gradient_shape():
+    """Test that approx gradient has correct shape matching theta."""
+    np.random.seed(43)
+    test_theta = rng.normal(size=(d, d))
+    test_data = rng.integers(2, size=(N, d), dtype=np.int32)
+
+    gradient, _ = fastmhn.approx.approx_gradient_and_score(
+        test_theta, test_data, max_cluster_size=d
+    )
+    assert gradient.shape == test_theta.shape, (
+        f"Gradient shape {gradient.shape} doesn't match theta shape {test_theta.shape}"
+    )

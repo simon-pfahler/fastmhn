@@ -216,3 +216,104 @@ def test_adamW():
     assert (
         np.linalg.norm(params_opt - np.array([0.5, 1.5])) < 1e-8
     ), f"Optimum found by AdamW is wrong!"
+
+
+def test_create_pD_empty_data():
+    """Test pD creation with empty dataset (d=0)."""
+    np.random.seed(43)
+    data = np.zeros((0, 0), dtype=np.int32)
+    pD = fastmhn.utility.create_pD(data)
+    assert (
+        pD.shape[0] == 1
+    ), f"pD should have 1 element for d=0, got {pD.shape[0]}"
+
+
+def test_create_pD_single_event():
+    """Test pD creation with single event (d=1)."""
+    np.random.seed(43)
+    data = np.array([[0], [1], [0], [1], [0]], dtype=np.int32)
+    pD = fastmhn.utility.create_pD(data)
+    assert pD.shape[0] == 2, f"pD should have 2 elements for d=1"
+    assert np.abs(pD[0] - 0.6) < 1e-12, f"pD[0] should be 0.6, got {pD[0]}"
+    assert np.abs(pD[1] - 0.4) < 1e-12, f"pD[1] should be 0.4, got {pD[1]}"
+
+
+def test_create_pD_all_zeros():
+    """Test pD creation with all-zero data."""
+    np.random.seed(43)
+    data = np.zeros((10, d), dtype=np.int32)
+    pD = fastmhn.utility.create_pD(data)
+    assert np.abs(pD[0] - 1) < 1e-12, f"pD[0] should be 1 for all-zero data"
+    assert (
+        np.sum(pD[1:]) < 1e-12
+    ), f"Other pD entries should be 0 for all-zero data"
+
+
+def test_create_pD_all_ones():
+    """Test pD creation with all-ones data."""
+    np.random.seed(43)
+    data = np.ones((10, d), dtype=np.int32)
+    pD = fastmhn.utility.create_pD(data)
+    all_ones_index = 2**d - 1
+    assert (
+        np.abs(pD[all_ones_index] - 1) < 1e-12
+    ), f"pD[{all_ones_index}] should be 1 for all-ones data"
+    assert (
+        np.sum(pD[:all_ones_index]) < 1e-12
+    ), f"Other pD entries should be 0 for all-ones data"
+
+
+def test_get_score_offset_single_sample():
+    """Test score offset with single sample."""
+    np.random.seed(43)
+    data = np.array([[1, 0, 1]], dtype=np.int32)
+    offset = fastmhn.utility.get_score_offset(data)
+    # Single sample: p=1 for that sample, offset = 1 * log(1) = 0
+    assert (
+        np.abs(offset) < 1e-12
+    ), f"Offset for single sample should be 0, got {offset}"
+
+
+def test_get_score_offset_uniform_weights():
+    """Test score offset with uniform weights."""
+    np.random.seed(43)
+    data = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.int32)
+    weights = np.ones(4)
+    offset = fastmhn.utility.get_score_offset(data, weights=weights)
+    # Each sample has p=0.25, offset = 4 * 0.25 * log(0.25) = log(0.25)
+    expected = np.log(0.25)
+    assert (
+        np.abs(offset - expected) < 1e-12
+    ), f"Offset {offset} != expected {expected}"
+
+
+def test_cmhn_from_omhn_single_event():
+    """Test cMHN from oMHN with d=1."""
+    np.random.seed(43)
+    omhn = np.array([[1.0], [0.5]])  # d=1, so omhn is (2, 1)
+    cmhn = fastmhn.utility.cmhn_from_omhn(omhn)
+    assert cmhn.shape == (1, 1), f"Expected (1,1), got {cmhn.shape}"
+    assert cmhn[0, 0] == omhn[0, 0], "Diagonal should match"
+
+
+def test_generate_theta_d1():
+    """Test theta generation with d=1."""
+    np.random.seed(43)
+    theta = fastmhn.utility.generate_theta(1)
+    assert theta.shape == (1, 1), f"Expected (1,1), got {theta.shape}"
+
+
+def test_create_indep_model_uniform_data():
+    """Test independence model with uniform data."""
+    np.random.seed(43)
+    data = np.zeros((150, d), dtype=np.int32)
+    # Set each event to be present in exactly 50 samples
+    data[:50, 0] = 1
+    data[50:100, 1] = 1
+    data[100:, 2] = 1
+    theta = fastmhn.utility.create_indep_model(data)
+    # For uniform data on each event (f[i] = 1/3), theta[i,i] = log(1/2)
+    for i in range(d):
+        assert (
+            np.abs(theta[i, i] - np.log(0.5)) < 1e-12
+        ), f"Independence model is wrong for uniform data"

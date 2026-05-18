@@ -154,3 +154,38 @@ def test_learn_convergence():
         assert (
             scores[i] >= scores[0] - 1e-5
         ), f"Score decreased from {scores[0]} to {scores[i]} at iteration {i}"
+
+
+# >>> Phase 3: Property-based tests <<<
+
+
+def test_learn_initialization_is_independence_model():
+    """Test that learn_mhn initialization returns independence model."""
+    np.random.seed(43)
+    N = 10000
+    data = rng.integers(2, size=(N, d), dtype=np.int32)
+    adam_params = {"N_max": 0, "verbose": False}
+
+    theta = fastmhn.learn.learn_mhn(data, adam_params=adam_params)
+    theta_ind = fastmhn.utility.create_indep_model(data)
+
+    # With N_max=0, only initialization is returned
+    assert np.linalg.norm(theta - theta_ind) < 1e-12, (
+        "Initialization does not match independence model"
+    )
+
+
+def test_learn_theta_regularization_shrinks_values():
+    """Test that regularization shrinks parameter magnitudes."""
+    np.random.seed(43)
+    N = 100
+    data = rng.integers(2, size=(N, d), dtype=np.int32)
+    adam_params = {"N_max": 20, "verbose": False}
+
+    theta_no_reg = fastmhn.learn.learn_mhn(data, reg=0, adam_params=adam_params)
+    theta_with_reg = fastmhn.learn.learn_mhn(data, reg=0.1, adam_params=adam_params)
+
+    # L1 regularization should shrink parameters toward zero
+    assert np.linalg.norm(theta_with_reg) < np.linalg.norm(theta_no_reg), (
+        "Regularization should shrink parameter magnitudes"
+    )

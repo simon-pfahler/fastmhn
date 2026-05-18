@@ -106,3 +106,50 @@ def test_gradient_and_score_small_d():
                 assert (
                     np.abs(explicit_grad[i, j] - gradient[i, j]) < 1e-10
                 ), f"Wrong gradient at index {i}, {j} for d={test_d}"
+
+
+# >>> Phase 3: Property-based tests <<<
+
+
+def test_score_is_negative():
+    """Test that score is always negative (log probabilities)."""
+    np.random.seed(43)
+    for test_d in range(2, 5):
+        test_theta = np.random.normal(size=(test_d, test_d))
+        test_data = np.random.randint(0, high=2, size=(50, test_d))
+
+        _, score = fastmhn.exact.gradient_and_score(test_theta, test_data)
+        assert score < 0, f"Score should be negative, got {score} for d={test_d}"
+
+
+def test_pTheta_is_probability_distribution():
+    """Test that pTheta is a valid probability distribution (sums to 1, non-negative)."""
+    np.random.seed(43)
+    for test_d in range(2, 5):
+        test_theta = np.random.normal(size=(test_d, test_d))
+
+        pTheta = fastmhn.explicit.calculate_pTheta(test_theta)
+        assert np.abs(np.sum(pTheta) - 1) < 1e-10, f"pTheta doesn't sum to 1 for d={test_d}"
+        assert np.all(
+            pTheta >= -1e-12
+        ), f"pTheta has negative values for d={test_d}"  # Allow tiny negative due to numerical errors
+
+
+def test_gradient_zero_for_uniform_theta():
+    """Test that gradient is zero when theta is diagonal with uniform base rates."""
+    np.random.seed(43)
+    for test_d in range(2, 4):
+        # Create uniform theta (all diagonal entries equal)
+        uniform_val = -1.0
+        theta = np.diag([uniform_val] * test_d)
+
+        # Generate data from this model
+        data = fastmhn.utility.generate_data(theta, 100)
+
+        gradient, _ = fastmhn.exact.gradient_and_score(theta, data)
+
+        # Off-diagonal gradients should be near zero (small due to finite samples)
+        off_diag = gradient - np.diag(np.diag(gradient))
+        assert (
+            np.linalg.norm(off_diag) < 0.5
+        ), f"Off-diagonal gradient too large for uniform theta, d={test_d}"

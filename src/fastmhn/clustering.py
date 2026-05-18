@@ -51,6 +51,8 @@ def hierarchical_clustering(
         scale=1e-5,
         size=inv_cluster_distances.shape,
     )
+    # Set diagonal to 0 to avoid self-combination
+    np.fill_diagonal(inv_cluster_distances, 0)
     for i in range(len(clustering)):
         for j in range(i):
             inv_cluster_distances[i, j] = max(

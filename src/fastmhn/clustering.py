@@ -5,22 +5,38 @@ def hierarchical_clustering(
     theta, e1=None, e2=None, max_size=None, active_events=None, verbose=False
 ):
     """
-    Performs hierarchical clustering based on a `theta` matrix, with the
-    restriction that `e1` and `e2` have to be in the same cluster, and that
-    their cluster contains at most `max_size` events.
-    When `e1` and `e2` are not specified, the algorithm makes sure that none of
-    the clusters contain more than `max_size` events.
-    When `active_events` is not None, the algorithm instead makes sure that
-    none of the clusters contain more than `max_size` events from this list.
+    Performs hierarchical clustering based on a theta matrix.
 
-    `theta`: dxd theta matrix
-    `e1`: first event of the important event pair, default is `None`
-    `e2`: second event of the important event pair, default is `None`
-    `max_size`: maximum allowed size for the cluster containing `e1` and `e2`
-    `active_events`: list containing relevant events for size restriction
-    `verbose`: set to `True` to get more output
+    The clustering respects constraints on cluster sizes. When e1 and e2 are
+    specified, they are forced to be in the same cluster. When active_events
+    is specified, the size constraint applies only to events in this list.
+
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix used to determine cluster distances
+    e1 : int, optional
+        First event of an important event pair that must be in the same cluster.
+        Default is None.
+    e2 : int, optional
+        Second event of an important event pair that must be in the same cluster.
+        Default is None.
+    max_size : int, optional
+        Maximum allowed size for the cluster containing e1 and e2 (if specified),
+        or for any cluster (if e1/e2 not specified). Default is None, which uses d.
+    active_events : list, optional
+        List of relevant events for size restriction. When specified, the
+        max_size constraint applies only to events in this list. Default is None,
+        which uses all events.
+    verbose : bool, optional
+        If True, prints clustering steps. Default is False.
+
+    Returns
+    -------
+    list of list
+        List of clusters, where each cluster is a list of event indices.
+        All events 0..d-1 are included in exactly one cluster.
     """
-
     d = theta.shape[0]
     if max_size == None:
         max_size = d
@@ -138,9 +154,11 @@ def hierarchical_clustering(
             combine_clusters[0]
         ]
         inv_cluster_distances[combine_clusters[0], combine_clusters[0]] = 0
-        keep = np.ones(inv_cluster_distances.shape[0], dtype=bool)
-        keep[combine_clusters[1]] = False
-        inv_cluster_distances = inv_cluster_distances[keep][:, keep]
+        inv_cluster_distances = np.delete(
+            np.delete(inv_cluster_distances, combine_clusters[1], axis=0),
+            combine_clusters[1],
+            axis=1,
+        )
 
         # update the clustering
         clustering[combine_clusters[0]] += clustering[combine_clusters[1]]

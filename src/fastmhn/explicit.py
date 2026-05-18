@@ -7,7 +7,20 @@ _bit_masks_cache = {}
 
 
 def _get_bit_masks(d):
-    """Get or create bit masks for a given dimension d."""
+    """
+    Get or create bit masks for a given dimension d.
+
+    Parameters
+    ----------
+    d : int
+        Dimension (number of events)
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        (masks_0, masks_1) where masks_0[j] is a boolean array indicating
+        positions where bit j is 0, and masks_1[j] indicates positions where bit j is 1
+    """
     if d not in _bit_masks_cache:
         n_states = 2**d
         # For each bit position j (0 to d-1), create masks for bit (d-1-j)
@@ -25,10 +38,19 @@ def _get_bit_masks(d):
 
 def calculate_pTheta(theta):
     """
-    Calculates the time-marginalized probability distribution pTheta for a
-    given theta matrix.
+    Calculates the time-marginalized probability distribution pTheta for a given theta matrix.
 
-    `theta`: dxd theta matrix
+    This solves (I - Q) pTheta = p0, where p0 is the initial state (all zeros).
+
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of length 2^d containing the probability distribution pTheta
     """
     d = theta.shape[0]
 
@@ -45,10 +67,21 @@ def calculate_pTheta(theta):
 
 def score(theta, pD):
     """
-    Calculates the score for a given theta matrix and data distribution.
+    Calculates the log-likelihood score for a given theta matrix and data distribution.
 
-    `theta`: dxd theta matrix
-    `pD`: 2**d probability distribution of the data
+    score = sum_x pD[x] * ln(pTheta[x])
+
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix
+    pD : numpy.ndarray
+        Array of length 2^d containing the data distribution
+
+    Returns
+    -------
+    float
+        The log-likelihood score
     """
     d = theta.shape[0]
 
@@ -59,11 +92,19 @@ def score(theta, pD):
 
 def gradient_and_score(theta, data):
     """
-    Calculates the gradient and score for a given theta matrix and data
-    distribution.
+    Calculates the gradient and score for a given theta matrix and data distribution.
 
-    `theta`: dxd theta matrix
-    `pD`: 2**d probability distribution of the data
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix
+    data : numpy.ndarray
+        Nxd matrix containing the dataset
+
+    Returns
+    -------
+    tuple of numpy.ndarray and float
+        (gradient, score) where gradient is a dxd matrix and score is a float
     """
     d = theta.shape[0]
 
@@ -97,11 +138,21 @@ def gradient_and_score(theta, data):
 
 def apply_eye_minus_Q(theta, x, transpose=False):
     """
-    Calculates (I-Q) @ x for a given theta matrix and vector x
+    Calculates (I-Q) @ x for a given theta matrix and vector x.
 
-    `theta`: dxd theta matrix
-    `x`: 2**d vector
-    `transpose`: set to true if (I-Q)^T @ x should be calculated
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix
+    x : numpy.ndarray
+        Vector of length 2^d
+    transpose : bool, optional
+        If True, calculates (I-Q)^T @ x instead. Default is False.
+
+    Returns
+    -------
+    numpy.ndarray
+        Result vector of length 2^d
     """
     d = theta.shape[0]
     n_states = 2**d
@@ -133,12 +184,22 @@ def apply_eye_minus_Q(theta, x, transpose=False):
 
 def apply_eye_minus_Q_diag(theta, x, transpose=False):
     """
-    Calculates diag(I-Q) @ x for a given theta matrix and vector x
+    Calculates diag(I-Q) @ x for a given theta matrix and vector x.
 
-    `theta`: dxd theta matrix
-    `x`: 2**d vector
-    `transpose`: does not do anything, only added so the interface is the same
-        as for `apply_eye_minus_Q` and `apply_eye_minus_Q_offdiag`
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix
+    x : numpy.ndarray
+        Vector of length 2^d
+    transpose : bool, optional
+        Does not affect the result (only added for interface consistency with
+        apply_eye_minus_Q and apply_eye_minus_Q_offdiag). Default is False.
+
+    Returns
+    -------
+    numpy.ndarray
+        Result vector of length 2^d
     """
     d = theta.shape[0]
     bigTheta = np.exp(theta)
@@ -163,11 +224,21 @@ def apply_eye_minus_Q_diag(theta, x, transpose=False):
 
 def apply_eye_minus_Q_offdiag(theta, x, transpose=False):
     """
-    Calculates offdiag(I-Q) @ x for a given theta matrix and vector x
+    Calculates offdiag(I-Q) @ x for a given theta matrix and vector x.
 
-    `theta`: dxd theta matrix
-    `x`: 2**d vector
-    `transpose`: set to true if offdiad(I-Q)^T @ x should be calculated
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix
+    x : numpy.ndarray
+        Vector of length 2^d
+    transpose : bool, optional
+        If True, calculates offdiag(I-Q)^T @ x. Default is False.
+
+    Returns
+    -------
+    numpy.ndarray
+        Result vector of length 2^d
     """
     d = theta.shape[0]
     bigTheta = np.exp(theta)
@@ -196,11 +267,21 @@ def apply_eye_minus_Q_offdiag(theta, x, transpose=False):
 
 def apply_Qdiff_ii(theta, x, i):
     """
-    Calculates dQ/d(theta_ii) @ x for a given theta matrix and vector x
+    Calculates dQ/d(theta_ii) @ x for a given theta matrix and vector x.
 
-    `theta`: dxd theta matrix
-    `x`: 2**d vector
-    `i`: index of theta matrix to take derivative with respect to
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix
+    x : numpy.ndarray
+        Vector of length 2^d
+    i : int
+        Index of theta matrix element to take derivative with respect to
+
+    Returns
+    -------
+    numpy.ndarray
+        Result vector of length 2^d
     """
     d = theta.shape[0]
     bigTheta = np.exp(theta)
@@ -222,9 +303,20 @@ def apply_Qdiff_ii(theta, x, i):
 
 def create_full_Q(theta):
     """
-    Creates the full Q matrix for a given theta matrix
+    Creates the full Q matrix for a given theta matrix.
 
-    `theta`: dxd theta matrix
+    The Q matrix is the generator of the continuous-time Markov process.
+    For MHN models, Q has a specific block structure based on theta.
+
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix
+
+    Returns
+    -------
+    numpy.ndarray
+        2^d x 2^d Q matrix
     """
     d = theta.shape[0]
     bigTheta = np.exp(theta)

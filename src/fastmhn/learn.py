@@ -14,18 +14,35 @@ def learn_mhn(
     adam_params={},
 ):
     """
-    Learn an MHN given some data.
+    Learn an MHN (Mutational Hierarchical Network) model from data.
 
-    `data`: Nxd matrix containing the dataset
-    `weights`: array of length N, used set the influence of individual samples
-        on the score and gradient, default is `None`, which uses a weight of 1
-        for all samples
-    `reg`: Regularization strength
-    `gradient_and_score_params`: Parameters passed to gradient_and_score call
-    `theta_init`: Initial theta, default is the independence model
-    `clustering_algorithm`: Clustering algorithm to use, default is
-        `hierarchical_clustering` from `fastmhn.clustering`
-    `adam_params`: Parameters passed to adam
+    This function fits an MHN model to the given dataset using the Adam optimizer.
+    It handles absent events (events that never occur in the data) by learning
+    a sub-model on the present events and then extending it.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Nxd matrix containing the dataset (binary: 0 or 1)
+    weights : numpy.ndarray, optional
+        Array of length N, used to set the influence of individual samples
+        on the score and gradient. Default is None, which uses a weight of 1
+        for all samples.
+    reg : float, optional
+        L1 regularization strength. Default is 1e-2.
+    gradient_and_score_params : dict, optional
+        Parameters passed to the gradient_and_score function.
+        Default is an empty dict.
+    theta_init : numpy.ndarray, optional
+        Initial theta matrix. Default is None, which uses the independence model.
+    adam_params : dict, optional
+        Parameters passed to the Adam optimizer.
+        Default is an empty dict (uses default Adam parameters).
+
+    Returns
+    -------
+    numpy.ndarray
+        dxd learned theta matrix for the MHN model
     """
 
     d = data.shape[1]
@@ -104,18 +121,36 @@ def learn_omhn(
     adam_params={},
 ):
     """
-    Learn an MHN given some data.
+    Learn an oMHN (observation Mutational Hierarchical Network) model from data.
 
-    `data`: Nxd matrix containing the dataset
-    `weights`: array of length N, used set the influence of individual samples
-        on the score and gradient, default is `None`, which uses a weight of 1
-        for all samples
-    `reg`: Regularization strength
-    `gradient_and_score_params`: Parameters passed to gradient_and_score call
-    `theta_init`: Initial theta, default is the independence model
-    `clustering_algorithm`: Clustering algorithm to use, default is
-        `hierarchical_clustering` from `fastmhn.clustering`
-    `adam_params`: Parameters passed to adam
+    oMHN extends MHN by adding observation rates that model the probability
+    of observing each event. This function fits an oMHN model to the given
+    dataset using the Adam optimizer.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Nxd matrix containing the dataset (binary: 0 or 1)
+    weights : numpy.ndarray, optional
+        Array of length N, used to set the influence of individual samples
+        on the score and gradient. Default is None, which uses a weight of 1
+        for all samples.
+    reg : float, optional
+        L1 regularization strength. Default is 1e-2.
+    gradient_and_score_params : dict, optional
+        Parameters passed to the gradient_and_score function.
+        Default is an empty dict.
+    theta_init : numpy.ndarray, optional
+        Initial theta matrix of shape (d+1)xd. Default is None, which initializes
+        with zeros for observation rates and independence model for the rest.
+    adam_params : dict, optional
+        Parameters passed to the Adam optimizer.
+        Default is an empty dict (uses default Adam parameters).
+
+    Returns
+    -------
+    numpy.ndarray
+        (d+1)xd learned theta matrix for the oMHN model
     """
 
     d = data.shape[1]

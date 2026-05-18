@@ -15,6 +15,27 @@ def __get_approx_gradient_and_score_contributions(
     clustering_algorithm=hierarchical_clustering,
     max_cluster_size=None,
 ):
+    """
+    Internal function to compute gradient and score contributions for each sample.
+
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix
+    data : numpy.ndarray
+        Nxd matrix containing the dataset
+    weights : numpy.ndarray, optional
+        Array of length N containing sample weights
+    clustering_algorithm : callable, optional
+        Clustering algorithm to use. Default is hierarchical_clustering.
+    max_cluster_size : int, optional
+        Maximum allowed size for clusters. Default is None (uses d).
+
+    Returns
+    -------
+    tuple of list
+        (gradients, scores) where each is a list of contributions from each sample
+    """
     d = theta.shape[0]
     if max_cluster_size is None:
         max_cluster_size = d
@@ -77,18 +98,36 @@ def approx_gradient_and_score(
     verbose=False,
 ):
     """
-    Calculates approximate gradients and scores using a provided clustering
-    algorithm.
+    Calculates approximate gradients and scores using a provided clustering algorithm.
 
-    `theta`: dxd theta matrix
-    `data`: Nxd matrix containing the dataset
-    `weights`: array of length N, used set the influence of individual samples
-        on the score and gradient, default is `None`, which uses a weight of 1
-        for all samples
-    `clustering_algorithm`: Clustering algorithm to use, default is
-        `hierarchical_clustering` from `fastmhn.clustering`
-    `max_cluster_size`: maximal allowed size for clusters
-    `verbose`: set to `True` to get more output
+    For each sample in the dataset:
+    - If the number of active events <= max_cluster_size and d <= 256,
+      uses exact calculation
+    - Otherwise, uses hierarchical clustering to decompose the problem
+      into smaller sub-problems that can be solved exactly
+
+    Parameters
+    ----------
+    theta : numpy.ndarray
+        dxd theta matrix
+    data : numpy.ndarray
+        Nxd matrix containing the dataset
+    weights : numpy.ndarray, optional
+        Array of length N, used to set the influence of individual samples
+        on the score and gradient. Default is None, which uses a weight of 1
+        for all samples.
+    clustering_algorithm : callable, optional
+        Clustering algorithm to use. Default is hierarchical_clustering
+        from fastmhn.clustering.
+    max_cluster_size : int, optional
+        Maximal allowed size for clusters. Default is None, which uses d.
+    verbose : bool, optional
+        If True, prints dataset information. Default is False.
+
+    Returns
+    -------
+    tuple of numpy.ndarray and float
+        (gradient, score) where gradient is a dxd matrix and score is a float
     """
     d = theta.shape[0]
     if max_cluster_size is None:

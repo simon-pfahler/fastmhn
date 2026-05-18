@@ -12,6 +12,8 @@ N = 10000
 
 
 def test_generate_data():
+    """Test that generated data has correct distribution."""
+    np.random.seed(43)
     theta = np.diag([np.log(10), np.log(10), np.log(10)])
     data = fastmhn.utility.generate_data(theta, N)
     active_events = np.sum(data, axis=1)
@@ -35,24 +37,43 @@ def test_generate_data():
 
 
 def test_create_indep_model():
+    """Test independence model matches ground truth for uniform data."""
+    np.random.seed(43)
     theta = np.diag(rng.normal(size=(d)))
     data = fastmhn.utility.generate_data(theta, N)
     theta_ind = fastmhn.utility.create_indep_model(data)
     for i in range(d):
-        assert np.abs(theta_ind[i, i] - theta[i, i]) < 10 / np.sqrt(
-            N
-        ), f"Independence model leads to wrong entry for event {i}: absolute error is {np.abs(theta_ind[i,i]-theta[i,i])}!"
+        assert np.abs(theta_ind[i, i] - theta[i, i]) < 10 / np.sqrt(N), (
+            f"Independence model leads to wrong entry for event {i}: "
+            f"absolute error is {np.abs(theta_ind[i,i]-theta[i,i])}!"
+        )
 
 
 def test_create_pD():
+    """Test pD creation correctness and normalization."""
+    np.random.seed(43)
     data = rng.integers(2, size=(N, d), dtype=np.int32)
     pD = fastmhn.utility.create_pD(data)
+
+    # Test sum to 1
     assert (
         np.abs(np.sum(pD) - 1) < 1e-12
     ), f"pD does not sum to 1 (but rather {np.sum(pD)})!"
 
+    # Test correctness by comparing to slow implementation
+    pD_slow = np.zeros(2**d)
+    for sample in data:
+        index = int("".join(map(str, sample)), 2)
+        pD_slow[index] += 1
+    pD_slow /= N
+    assert np.allclose(
+        pD, pD_slow, atol=1e-12
+    ), "create_pD values don't match slow implementation"
+
 
 def test_forward_substitution():
+    """Test forward substitution against np.linalg.solve."""
+    np.random.seed(43)
     lower_triangular_matrix = np.tril(rng.normal(size=(d, d)))
     lower_triangular_operator = lambda x: lower_triangular_matrix @ x
     rhs = rng.normal(size=(d))
@@ -64,6 +85,8 @@ def test_forward_substitution():
 
 
 def test_backward_substitution():
+    """Test backward substitution against np.linalg.solve."""
+    np.random.seed(43)
     upper_triangular_matrix = np.triu(rng.normal(size=(d, d)))
     upper_triangular_operator = lambda x: upper_triangular_matrix @ x
     rhs = rng.normal(size=(d))
@@ -75,6 +98,8 @@ def test_backward_substitution():
 
 
 def test_jacobi():
+    """Test Jacobi solver on diagonal and triangular matrices."""
+    np.random.seed(43)
     diagonal_matrix = np.diag(rng.normal(size=(d)))
     diagonal_operator = lambda x: diagonal_matrix @ x
     rhs = rng.normal(size=(d))
@@ -107,6 +132,9 @@ def test_jacobi():
 
 
 def test_get_score_offset():
+    """Test score offset calculation for trivial and non-trivial cases."""
+    np.random.seed(43)
+    # Trivial case: all samples identical
     data = np.zeros((N, d), dtype=np.int32)
     data[:, 1] = 1
     offset = fastmhn.utility.get_score_offset(data)
@@ -114,16 +142,60 @@ def test_get_score_offset():
         np.abs(offset) < 1e-12
     ), f"Score offset for trivial dataset is wrong ({offset})!"
 
+    # Non-trivial case: known distribution
+    # Create data with 2 types of samples
+    data2 = np.zeros((100, 2), dtype=np.int32)
+    data2[:50, 0] = 1  # 50 samples with only event 0
+    data2[50:, 1] = 1  # 50 samples with only event 1
+    offset2 = fastmhn.utility.get_score_offset(data2)
+    expected = 0.5 * np.log(0.5) + 0.5 * np.log(0.5)
+    assert (
+        np.abs(offset2 - expected) < 1e-10
+    ), f"Score offset for known distribution is wrong: {offset2} != {expected}"
+
+    # Test with weights
+    weights = np.ones(100)
+    weights[:50] = 2.0  # First 50 samples have weight 2
+    offset3 = fastmhn.utility.get_score_offset(data2, weights=weights)
+    # Total weight = 100 + 50 = 150
+    # p0 = 100/150, p1 = 50/150
+    p0 = 100 / 150
+    p1 = 50 / 150
+    expected_weighted = p0 * np.log(p0) + p1 * np.log(p1)
+    assert (
+        np.abs(offset3 - expected_weighted) < 1e-10
+    ), f"Score offset with weights is wrong: {offset3} != {expected_weighted}"
+
 
 def test_cmhn_from_omhn():
+    """Test cMHN conversion from oMHN."""
+    np.random.seed(43)
     omhn = rng.normal(size=(d + 1, d))
     cmhn = fastmhn.utility.cmhn_from_omhn(omhn)
+
+    # Test diagonals match
     assert np.all(
         np.diag(omhn[:d]) == np.diag(cmhn)
     ), f"Diagonal entries of oMHN and equivalent cMHN do not match!"
 
+    for i in range(d):
+        for j in range(d):
+            if i == j:
+                # Diagonal: cmhn[i,i] = omhn[i,i]
+                assert (
+                    cmhn[i, j] == omhn[i, j]
+                ), f"Diagonal entry cmhn[{i},{j}] != omhn[{i},{j}]"
+            else:
+                # Off-diagonal: cmhn[i,j] = omhn[i,j] - omhn[d,j]
+                expected = omhn[i, j] - omhn[d, j]
+                assert (
+                    cmhn[i, j] == expected
+                ), f"Off-diagonal entry cmhn[{i},{j}] = {cmhn[i,j]}, expected {expected}"
+
 
 def test_adamW():
+    """Test AdamW optimizer on simple quadratic function."""
+
     def grad_and_score_func(params):
         s = -((params[0] - 0.5) ** 2) - (2 * params[1] - 3) ** 2
         g = np.array([-2 * (params[0] - 0.5), -4 * (2 * params[1] - 3)])

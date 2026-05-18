@@ -11,6 +11,8 @@ d = 3
 
 
 def test_learn_mhn_init():
+    """Test MHN learning initialization returns diagonal theta for uniform data."""
+    np.random.seed(43)
     N = 100000
     data = rng.integers(2, size=(N, d), dtype=np.int32)
     adam_params = {"N_max": 0, "verbose": False}
@@ -28,6 +30,8 @@ def test_learn_mhn_init():
 
 
 def test_learn_mhn_regularization():
+    """Test that regularization suppresses off-diagonal entries in MHN learning."""
+    np.random.seed(43)
     thetaGT = fastmhn.utility.generate_theta(d)
     N = 100
     data = fastmhn.utility.generate_data(thetaGT, N)
@@ -44,6 +48,8 @@ def test_learn_mhn_regularization():
 
 
 def test_learn_mhn_absent_events():
+    """Test MHN learning handles absent events correctly."""
+    np.random.seed(43)
     N = 100
     data = np.zeros((N, d), dtype=np.int32)
     data[: N // 2, 0] = 1
@@ -58,6 +64,8 @@ def test_learn_mhn_absent_events():
 
 
 def test_learn_omhn_init():
+    """Test oMHN learning initialization."""
+    np.random.seed(43)
     N = 100000
     data = rng.integers(2, size=(N, d), dtype=np.int32)
     adam_params = {"N_max": 0, "verbose": False}
@@ -79,6 +87,8 @@ def test_learn_omhn_init():
 
 
 def test_learn_omhn_regularization():
+    """Test that regularization suppresses off-diagonal entries in oMHN learning."""
+    np.random.seed(43)
     thetaGT = fastmhn.utility.generate_theta(d)
     N = 100
     data = fastmhn.utility.generate_data(thetaGT, N)
@@ -98,6 +108,8 @@ def test_learn_omhn_regularization():
 
 
 def test_learn_omhn_absent_events():
+    """Test oMHN learning handles absent events correctly."""
+    np.random.seed(43)
     N = 100
     data = np.zeros((N, d), dtype=np.int32)
     data[: N // 2, 0] = 1

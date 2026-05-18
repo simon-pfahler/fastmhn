@@ -15,6 +15,8 @@ pD = fastmhn.utility.create_pD(data)
 
 
 def test_score():
+    """Test explicit score calculation against exact."""
+    np.random.seed(43)
     score = fastmhn.explicit.score(theta, pD)
     score_val = fastmhn.exact.gradient_and_score(theta, data)[1]
     assert (
@@ -23,6 +25,8 @@ def test_score():
 
 
 def test_gradient_and_score():
+    """Test explicit gradient and score against exact."""
+    np.random.seed(43)
     gradient, score = fastmhn.explicit.gradient_and_score(theta, data)
     gradient_val, score_val = fastmhn.exact.gradient_and_score(theta, data)
     assert (

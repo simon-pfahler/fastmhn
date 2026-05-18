@@ -4,9 +4,8 @@ from mhn.training.state_containers import StateContainer
 
 import fastmhn
 
-np.random.seed(43)
-
 # >>> setup
+np.random.seed(43)
 d = 3
 theta = np.random.normal(size=(d, d))
 data = np.random.randint(0, high=2, size=(1000, d))
@@ -21,6 +20,8 @@ apply_T = lambda v: fastmhn.exact.apply_eye_minus_Q(theta, v, transpose=True)
 
 
 def test_gradient_and_score_explicit():
+    """Test gradient and score against explicit Q matrix calculation."""
+    np.random.seed(43)
     gradient, score = fastmhn.exact.gradient_and_score(theta, data)
     Q = fastmhn.explicit.create_full_Q(theta)
     pT = np.linalg.solve(np.eye(2**d) - Q, p0)
@@ -44,6 +45,8 @@ def test_gradient_and_score_explicit():
 
 
 def test_gradient_and_score_finite_differences():
+    """Test gradient and score against finite differences."""
+    np.random.seed(43)
     gradient, score = fastmhn.exact.gradient_and_score(theta, data)
     eps = 1e-5
     fd_grad = np.zeros((d, d))

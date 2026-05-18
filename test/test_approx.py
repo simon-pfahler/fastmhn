@@ -15,6 +15,8 @@ pD = fastmhn.utility.create_pD(data)
 
 
 def test_approx_gradient_and_score():
+    """Test approximate gradient and score against exact."""
+    np.random.seed(43)
     gradient, score = fastmhn.approx.approx_gradient_and_score(
         theta, data, max_cluster_size=3
     )

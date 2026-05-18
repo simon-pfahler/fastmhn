@@ -1,2 +1,8 @@
 test/__pycache__
 src/fastmhn/__pycache__
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.pytest_cache/

@@ -211,7 +211,7 @@ def get_score_offset(data, weights=None):
         D_{KL} = offset - score.
 
     The offset is calculated via
-        offset = sum_{x}p_{D,x}\ln(p_{D,x})
+        offset = sum_{x}p_{D,x}*ln(p_{D,x})
 
     `data`: Nxd dataset to calculate offset for
     `weights`: array of length N, used set the influence of individual samples

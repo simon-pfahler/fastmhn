@@ -1,9 +1,18 @@
+from __future__ import annotations
+
 import numpy as np
+from typing import Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
 from mhn.training import likelihood_cmhn
 from mhn.training.state_containers import StateContainer
 
 
-def gradient_and_score(theta, data):
+def gradient_and_score(
+    theta: NDArray[np.float64], data: NDArray[np.int32]
+) -> Tuple[NDArray[np.float64], float]:
     """
     Calculates the gradient and score using the mhn package's likelihood_cmhn.
 

@@ -1,7 +1,13 @@
+from __future__ import annotations
+
 import numpy as np
+from typing import Callable, Optional, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
-def get_subdata(data, columns):
+def get_subdata(data: NDArray[np.int32], columns: list[int]) -> NDArray[np.int32]:
     """
     Reduces a dataset to contain fewer events.
 
@@ -9,7 +15,7 @@ def get_subdata(data, columns):
     ----------
     data : numpy.ndarray
         Nxd matrix containing the dataset
-    columns : list or array-like
+    columns : list of int
         Indices of columns (events) to keep in the dataset
 
     Returns
@@ -20,7 +26,9 @@ def get_subdata(data, columns):
     return data[:, columns]
 
 
-def create_indep_model(data, weights=None):
+def create_indep_model(
+    data: NDArray[np.int32], weights: Optional[NDArray[np.float64]] = None
+) -> NDArray[np.float64]:
     """
     Creates the independence model for a given dataset.
 
@@ -42,10 +50,10 @@ def create_indep_model(data, weights=None):
         dxd theta matrix for the independence model
     """
     if weights is None:
-        weights = np.ones(data.shape[0])
+        weights = np.ones(data.shape[0], dtype=np.float64)
 
     d = data.shape[1]
-    theta = np.zeros((d, d))
+    theta = np.zeros((d, d), dtype=np.float64)
     f = np.sum(data * np.expand_dims(weights, -1), axis=0) / np.sum(weights)
     for i in range(d):
         theta[i, i] = np.log(f[i] / (1 - f[i]))
@@ -53,13 +61,13 @@ def create_indep_model(data, weights=None):
 
 
 def generate_theta(
-    d,
-    base_rate_loc=-1,
-    base_rate_scale=1,
-    influence_loc=0,
-    influence_scale=1,
-    sparsity=0.8,
-):
+    d: int,
+    base_rate_loc: float = -1,
+    base_rate_scale: float = 1,
+    influence_loc: float = 0,
+    influence_scale: float = 1,
+    sparsity: float = 0.8,
+) -> NDArray[np.float64]:
     """
     Generates artificial theta matrices with similar features to biological ones.
 
@@ -104,7 +112,7 @@ def generate_theta(
     return theta
 
 
-def generate_data(thetaGT, size):
+def generate_data(thetaGT: NDArray[np.float64], size: int) -> NDArray[np.int32]:
     """
     Generates artificial data from a ground truth theta matrix.
 
@@ -172,7 +180,7 @@ def generate_data(thetaGT, size):
     return data
 
 
-def create_pD(data):
+def create_pD(data: NDArray[np.int32]) -> NDArray[np.float64]:
     """
     Creates the data distribution given a dataset.
 
@@ -200,7 +208,10 @@ def create_pD(data):
     return pD / data.shape[0]
 
 
-def forward_substitution(lower_triangular_operator, rhs):
+def forward_substitution(
+    lower_triangular_operator: Callable[[NDArray], NDArray],
+    rhs: NDArray[np.float64],
+) -> NDArray[np.float64]:
     """
     Solves the linear equation Lx = b for a lower triangular matrix L,
     given as an operator.
@@ -230,7 +241,10 @@ def forward_substitution(lower_triangular_operator, rhs):
     return res
 
 
-def backward_substitution(upper_triangular_operator, rhs):
+def backward_substitution(
+    upper_triangular_operator: Callable[[NDArray], NDArray],
+    rhs: NDArray[np.float64],
+) -> NDArray[np.float64]:
     """
     Solves the linear equation Ux = b for an upper triangular matrix U,
     given as an operator.
@@ -260,7 +274,12 @@ def backward_substitution(upper_triangular_operator, rhs):
     return res
 
 
-def jacobi(op_diag, op_offdiag, rhs, iterations=None):
+def jacobi(
+    op_diag: Callable[[NDArray], NDArray],
+    op_offdiag: Callable[[NDArray], NDArray],
+    rhs: NDArray[np.float64],
+    iterations: Optional[int] = None,
+) -> NDArray[np.float64]:
     """
     Approximates the solution of the linear equation Ax = b using the Jacobi method.
 
@@ -286,21 +305,23 @@ def jacobi(op_diag, op_offdiag, rhs, iterations=None):
         Approximate solution vector x
     """
 
-    if iterations == None:
+    if iterations is None:
         iterations = len(rhs).bit_length()
 
     res = np.zeros_like(rhs)
 
     dg = op_diag(np.ones_like(res))
 
-    for i in range(iterations):
+    for _ in range(iterations):
         res = rhs - op_offdiag(res)
         res /= dg
 
     return res
 
 
-def get_score_offset(data, weights=None):
+def get_score_offset(
+    data: NDArray[np.int32], weights: Optional[NDArray[np.float64]] = None
+) -> float:
     """
     Calculates the offset between the log-likelihood score and the KL divergence.
 
@@ -325,7 +346,7 @@ def get_score_offset(data, weights=None):
     """
 
     if weights is None:
-        weights = np.ones(data.shape[0])
+        weights = np.ones(data.shape[0], dtype=np.float64)
 
     N = np.sum(weights)
     # Use np.unique with return_inverse for vectorized computation
@@ -334,18 +355,18 @@ def get_score_offset(data, weights=None):
     )
 
     # Sum weights for each unique sample
-    counts = np.zeros(len(unique_samples))
+    counts = np.zeros(len(unique_samples), dtype=np.float64)
     for i, idx in enumerate(inverse_indices):
         counts[idx] += weights[i]
 
     # Vectorized computation of offset
     p = counts / N
-    offset = np.sum(np.where(p > 0, p * np.log(p), 0))
+    offset = float(np.sum(np.where(p > 0, p * np.log(p), 0)))
 
     return offset
 
 
-def cmhn_from_omhn(theta_omhn):
+def cmhn_from_omhn(theta_omhn: NDArray[np.float64]) -> NDArray[np.float64]:
     """
     Converts an oMHN (observation MHN) theta matrix to the equivalent cMHN (classical MHN).
 
@@ -364,24 +385,24 @@ def cmhn_from_omhn(theta_omhn):
         dxd theta matrix for the classical MHN
     """
     d = theta_omhn.shape[1]
-    ctheta = theta_omhn[:d] - theta_omhn[d]
+    ctheta: NDArray[np.float64] = theta_omhn[:d] - theta_omhn[d]
     np.fill_diagonal(ctheta, np.diag(theta_omhn[:d]))
     return ctheta
 
 
 def adamW(
-    params_init,
-    grad_and_score_func,
-    reg_grad_func,
-    alpha=1e-3,
-    beta1=0.9,
-    beta2=0.999,
-    eps=1e-8,
-    N_max=1000,
-    score_threshold=1e-5,
-    param_change_threshold=1e-3,
-    verbose=False,
-):
+    params_init: NDArray[np.float64],
+    grad_and_score_func: Callable[[NDArray[np.float64]], Tuple[NDArray[np.float64], float]],
+    reg_grad_func: Callable[[NDArray[np.float64]], NDArray[np.float64]],
+    alpha: float = 1e-3,
+    beta1: float = 0.9,
+    beta2: float = 0.999,
+    eps: float = 1e-8,
+    N_max: int = 1000,
+    score_threshold: float = 1e-5,
+    param_change_threshold: float = 1e-3,
+    verbose: bool = False,
+) -> NDArray[np.float64]:
     """
     Optimizes parameters to maximize a score function using AdamW algorithm.
 
@@ -447,37 +468,39 @@ def adamW(
         if t > 1:
             if np.abs(s_prev - s) / np.abs(s_prev) < score_threshold:
                 if verbose:
-                    print(f"Optimization stopped due to score")
+                    print("Optimization stopped due to score")
                 break
             if np.max(np.abs(step)) < param_change_threshold:
                 if verbose:
-                    print(f"Optimization stopped due to parameter change")
+                    print("Optimization stopped due to parameter change")
                 break
         s_prev = s
         t += 1
 
     if t == N_max:
         if verbose:
-            print(f"Optimization stopped due to maximum number of iterations")
+            print("Optimization stopped due to maximum number of iterations")
 
     return params
 
 
 def adam(
-    params_init,
-    grad_and_score_func,
-    reg_grad_func,
-    alpha=1e-3,
-    beta1=0.9,
-    beta2=0.999,
-    eps=1e-8,
-    N_max=1000,
-    score_threshold=1e-5,
-    param_change_threshold=1e-3,
-    verbose=False,
-):
+    params_init: NDArray[np.float64],
+    grad_and_score_func: Callable[[NDArray[np.float64]], Tuple[NDArray[np.float64], float]],
+    reg_grad_func: Callable[[NDArray[np.float64]], NDArray[np.float64]],
+    alpha: float = 1e-3,
+    beta1: float = 0.9,
+    beta2: float = 0.999,
+    eps: float = 1e-8,
+    N_max: int = 1000,
+    score_threshold: float = 1e-5,
+    param_change_threshold: float = 1e-3,
+    verbose: bool = False,
+) -> NDArray[np.float64]:
     """
     Optimizes parameters to maximize a score function using the Adam algorithm.
+
+    Adam (Adaptive Moment Estimation) combines the benefits of AdaGrad and RMSProp.
     See https://arxiv.org/abs/1412.6980.
 
     Parameters
@@ -541,17 +564,17 @@ def adam(
         if t > 1:
             if np.abs(s_prev - s) / np.abs(s_prev) < score_threshold:
                 if verbose:
-                    print(f"Optimization stopped due to score")
+                    print("Optimization stopped due to score")
                 break
             if np.max(np.abs(step)) < param_change_threshold:
                 if verbose:
-                    print(f"Optimization stopped due to parameter change")
+                    print("Optimization stopped due to parameter change")
                 break
         s_prev = s
         t += 1
 
     if t == N_max:
         if verbose:
-            print(f"Optimization stopped due to maximum number of iterations")
+            print("Optimization stopped due to maximum number of iterations")
 
     return params

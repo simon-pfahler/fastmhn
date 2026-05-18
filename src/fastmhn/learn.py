@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+from typing import Any, Callable, Optional, TYPE_CHECKING
+
 import numpy as np
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 from .approx import approx_gradient_and_score
 from .clustering import hierarchical_clustering
@@ -6,13 +13,13 @@ from .utility import adam, cmhn_from_omhn, create_indep_model
 
 
 def learn_mhn(
-    data,
-    weights=None,
-    reg=1e-2,
-    gradient_and_score_params={},
-    theta_init=None,
-    adam_params={},
-):
+    data: NDArray[np.int32],
+    weights: Optional[NDArray[np.float64]] = None,
+    reg: float = 1e-2,
+    gradient_and_score_params: dict[str, Any] = {},
+    theta_init: Optional[NDArray[np.float64]] = None,
+    adam_params: dict[str, Any] = {},
+) -> NDArray[np.float64]:
     """
     Learn an MHN (Mutational Hierarchical Network) model from data.
 
@@ -26,8 +33,7 @@ def learn_mhn(
         Nxd matrix containing the dataset (binary: 0 or 1)
     weights : numpy.ndarray, optional
         Array of length N, used to set the influence of individual samples
-        on the score and gradient. Default is None, which uses a weight of 1
-        for all samples.
+        on the model. Default is None, which uses a weight of 1 for all samples.
     reg : float, optional
         L1 regularization strength. Default is 1e-2.
     gradient_and_score_params : dict, optional
@@ -50,7 +56,7 @@ def learn_mhn(
 
     # >>> handle absent events
     if np.any(np.sum(data, axis=0) == 0):
-        indices = np.where(np.sum(data, axis=0) == 0)[0]
+        indices: list[int] = list(np.where(np.sum(data, axis=0) == 0)[0])
         subdata = np.delete(data, indices, axis=1)
 
         if theta_init is not None:
@@ -68,7 +74,7 @@ def learn_mhn(
             adam_params,
         )
 
-        theta = np.zeros((d, d))
+        theta = np.zeros((d, d), dtype=np.float64)
 
         rows_and_cols = [i for i in range(d) if i not in indices]
 
@@ -88,7 +94,7 @@ def learn_mhn(
         "clustering_algorithm", hierarchical_clustering
     )
     gradient_and_score_params.setdefault(
-        "max_cluster_size", np.max(np.sum(data, axis=1))
+        "max_cluster_size", int(np.max(np.sum(data, axis=1)))
     )
 
     adam_params.setdefault("alpha", 0.1)
@@ -98,14 +104,18 @@ def learn_mhn(
     adam_params.setdefault("verbose", True)
     # <<< initialization
 
-    grad_and_score_func = lambda theta: approx_gradient_and_score(
-        theta, data, weights=weights, **gradient_and_score_params
+    grad_and_score_func: Callable[[NDArray[np.float64]], tuple[NDArray[np.float64], float]] = (
+        lambda theta: approx_gradient_and_score(
+            theta, data, weights=weights, **gradient_and_score_params
+        )
     )
 
     regularization_mask = np.ones_like(theta_init, dtype=bool)
     regularization_mask ^= np.eye(d, dtype=bool)
 
-    reg_grad_func = lambda theta: -reg * regularization_mask * np.sign(theta)
+    reg_grad_func: Callable[[NDArray[np.float64]], NDArray[np.float64]] = (
+        lambda theta: -reg * regularization_mask * np.sign(theta)
+    )
 
     theta = adam(theta_init, grad_and_score_func, reg_grad_func, **adam_params)
 
@@ -113,13 +123,13 @@ def learn_mhn(
 
 
 def learn_omhn(
-    data,
-    weights=None,
-    reg=1e-2,
-    gradient_and_score_params={},
-    theta_init=None,
-    adam_params={},
-):
+    data: NDArray[np.int32],
+    weights: Optional[NDArray[np.float64]] = None,
+    reg: float = 1e-2,
+    gradient_and_score_params: dict[str, Any] = {},
+    theta_init: Optional[NDArray[np.float64]] = None,
+    adam_params: dict[str, Any] = {},
+) -> NDArray[np.float64]:
     """
     Learn an oMHN (observation Mutational Hierarchical Network) model from data.
 
@@ -158,7 +168,7 @@ def learn_omhn(
 
     # >>> handle absent events
     if np.any(np.sum(data, axis=0) == 0):
-        indices = np.where(np.sum(data, axis=0) == 0)[0]
+        indices: list[int] = list(np.where(np.sum(data, axis=0) == 0)[0])
         subdata = np.delete(data, indices, axis=1)
 
         if theta_init is not None:
@@ -176,7 +186,7 @@ def learn_omhn(
             adam_params,
         )
 
-        theta = np.zeros((d + 1, d))
+        theta = np.zeros((d + 1, d), dtype=np.float64)
 
         rows = [i for i in range(d + 1) if i not in indices]
         cols = [i for i in range(d) if i not in indices]
@@ -191,14 +201,14 @@ def learn_omhn(
 
     # >>> initialization
     if theta_init is None:
-        theta_init = np.zeros((d + 1, d))
+        theta_init = np.zeros((d + 1, d), dtype=np.float64)
         theta_init[:d] = create_indep_model(data, weights=weights)
 
     gradient_and_score_params.setdefault(
         "clustering_algorithm", hierarchical_clustering
     )
     gradient_and_score_params.setdefault(
-        "max_cluster_size", np.max(np.sum(data, axis=1))
+        "max_cluster_size", int(np.max(np.sum(data, axis=1)))
     )
 
     adam_params.setdefault("alpha", 0.1)
@@ -208,7 +218,7 @@ def learn_omhn(
     adam_params.setdefault("verbose", True)
     # <<< initialization
 
-    def grad_and_score_func(theta):
+    def grad_and_score_func(theta: NDArray[np.float64]) -> tuple[NDArray[np.float64], float]:
         ctheta = cmhn_from_omhn(theta)
         g = np.zeros_like(theta)
         g[:d], s = approx_gradient_and_score(
@@ -222,7 +232,9 @@ def learn_omhn(
     regularization_mask = np.ones_like(theta_init, dtype=bool)
     regularization_mask[:d] ^= np.eye(d, dtype=bool)
 
-    reg_grad_func = lambda theta: -reg * regularization_mask * np.sign(theta)
+    reg_grad_func: Callable[[NDArray[np.float64]], NDArray[np.float64]] = (
+        lambda theta: -reg * regularization_mask * np.sign(theta)
+    )
 
     theta = adam(theta_init, grad_and_score_func, reg_grad_func, **adam_params)
 

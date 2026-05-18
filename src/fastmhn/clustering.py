@@ -1,9 +1,21 @@
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+
 import numpy as np
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 def hierarchical_clustering(
-    theta, e1=None, e2=None, max_size=None, active_events=None, verbose=False
-):
+    theta: NDArray[np.float64],
+    e1: Optional[int] = None,
+    e2: Optional[int] = None,
+    max_size: Optional[int] = None,
+    active_events: Optional[list[int]] = None,
+    verbose: bool = False,
+) -> list[list[int]]:
     """
     Performs hierarchical clustering based on a theta matrix.
 
@@ -38,14 +50,14 @@ def hierarchical_clustering(
         All events 0..d-1 are included in exactly one cluster.
     """
     d = theta.shape[0]
-    if max_size == None:
+    if max_size is None:
         max_size = d
     restrict_only_first_size = True
     if e1 is None and e2 is None:
         restrict_only_first_size = False
         e1 = 0
         e2 = 0
-    clustering = [
+    clustering: list[list[int]] = [
         list({e1, e2}),
         *[[i] for i in range(d) if i not in (e1, e2)],
     ]
@@ -85,7 +97,7 @@ def hierarchical_clustering(
     # perform clustering steps (unite two clusters) as long as possible
     while np.max(inv_cluster_distances) > 0:
         # clusters to combine next
-        combine_clusters = sorted(
+        combine_clusters: list[int] = sorted(
             np.unravel_index(
                 inv_cluster_distances.argmax(), inv_cluster_distances.shape
             )

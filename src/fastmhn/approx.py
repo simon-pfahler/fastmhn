@@ -1,7 +1,13 @@
+from __future__ import annotations
+
 import warnings
+from typing import Callable, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from joblib import Parallel, delayed
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 from .clustering import hierarchical_clustering
 from .exact import gradient_and_score
@@ -9,12 +15,12 @@ from .utility import create_pD
 
 
 def __get_approx_gradient_and_score_contributions(
-    theta,
-    data,
-    weights=None,
-    clustering_algorithm=hierarchical_clustering,
-    max_cluster_size=None,
-):
+    theta: NDArray[np.float64],
+    data: NDArray[np.int32],
+    weights: Optional[NDArray[np.float64]] = None,
+    clustering_algorithm: Callable = hierarchical_clustering,
+    max_cluster_size: Optional[int] = None,
+) -> Tuple[list[NDArray[np.float64]], list[float]]:
     """
     Internal function to compute gradient and score contributions for each sample.
 
@@ -41,10 +47,10 @@ def __get_approx_gradient_and_score_contributions(
         max_cluster_size = d
 
     if weights is None:
-        weights = np.ones(data.shape[0])
+        weights = np.ones(data.shape[0], dtype=np.float64)
 
     # calculate gradient and score contributions for each patient individually
-    def process_patient(nr_patient):
+    def process_patient(nr_patient: int) -> Tuple[NDArray[np.float64], float]:
         # exact calculation if possible
         if (
             np.sum(data[nr_patient]) <= max_cluster_size
@@ -67,7 +73,7 @@ def __get_approx_gradient_and_score_contributions(
         )
 
         g_total = np.zeros_like(theta)
-        s_total = 0
+        s_total: float = 0.0
         for cluster in clustering:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -90,13 +96,13 @@ def __get_approx_gradient_and_score_contributions(
 
 
 def approx_gradient_and_score(
-    theta,
-    data,
-    weights=None,
-    clustering_algorithm=hierarchical_clustering,
-    max_cluster_size=None,
-    verbose=False,
-):
+    theta: NDArray[np.float64],
+    data: NDArray[np.int32],
+    weights: Optional[NDArray[np.float64]] = None,
+    clustering_algorithm: Callable = hierarchical_clustering,
+    max_cluster_size: Optional[int] = None,
+    verbose: bool = False,
+) -> Tuple[NDArray[np.float64], float]:
     """
     Calculates approximate gradients and scores using a provided clustering algorithm.
 
@@ -134,7 +140,7 @@ def approx_gradient_and_score(
         max_cluster_size = d
 
     if weights is None:
-        weights = np.ones(data.shape[0])
+        weights = np.ones(data.shape[0], dtype=np.float64)
 
     if verbose:
         avg_MB = np.mean(np.sum(data, axis=1))
@@ -153,6 +159,6 @@ def approx_gradient_and_score(
         theta, data, weights, clustering_algorithm, max_cluster_size
     )
     gradient = np.sum(gradients, axis=0) / np.sum(weights)
-    score = np.sum(scores) / np.sum(weights)
+    score = float(np.sum(scores) / np.sum(weights))
 
     return gradient, score

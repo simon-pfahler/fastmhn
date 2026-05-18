@@ -1,12 +1,18 @@
+from __future__ import annotations
+
 import numpy as np
+from typing import Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 from .utility import create_pD, jacobi
 
 # Precompute bit masks for efficiency
-_bit_masks_cache = {}
+_bit_masks_cache: dict[int, Tuple[NDArray[np.bool_], NDArray[np.bool_]]] = {}
 
 
-def _get_bit_masks(d):
+def _get_bit_masks(d: int) -> Tuple[NDArray[np.bool_], NDArray[np.bool_]]:
     """
     Get or create bit masks for a given dimension d.
 
@@ -24,8 +30,8 @@ def _get_bit_masks(d):
     if d not in _bit_masks_cache:
         n_states = 2**d
         # For each bit position j (0 to d-1), create masks for bit (d-1-j)
-        masks_0 = []
-        masks_1 = []
+        masks_0: list[NDArray[np.bool_]] = []
+        masks_1: list[NDArray[np.bool_]] = []
         for j in range(d):
             bit_pos = d - 1 - j
             mask0 = (np.arange(n_states) & (1 << bit_pos)) == 0
@@ -36,7 +42,7 @@ def _get_bit_masks(d):
     return _bit_masks_cache[d]
 
 
-def calculate_pTheta(theta):
+def calculate_pTheta(theta: NDArray[np.float64]) -> NDArray[np.float64]:
     """
     Calculates the time-marginalized probability distribution pTheta for a given theta matrix.
 
@@ -54,7 +60,7 @@ def calculate_pTheta(theta):
     """
     d = theta.shape[0]
 
-    p0 = np.zeros(2**d)
+    p0 = np.zeros(2**d, dtype=np.float64)
     p0[0] = 1
 
     op_diag = lambda x: apply_eye_minus_Q_diag(theta, x)
@@ -65,7 +71,7 @@ def calculate_pTheta(theta):
     return pTheta
 
 
-def score(theta, pD):
+def score(theta: NDArray[np.float64], pD: NDArray[np.float64]) -> float:
     """
     Calculates the log-likelihood score for a given theta matrix and data distribution.
 
@@ -87,10 +93,12 @@ def score(theta, pD):
 
     pTheta = calculate_pTheta(theta)
 
-    return np.dot(pD, np.log(pTheta))
+    return float(np.dot(pD, np.log(pTheta)))
 
 
-def gradient_and_score(theta, data):
+def gradient_and_score(
+    theta: NDArray[np.float64], data: NDArray[np.int32]
+) -> Tuple[NDArray[np.float64], float]:
     """
     Calculates the gradient and score for a given theta matrix and data distribution.
 
@@ -112,13 +120,13 @@ def gradient_and_score(theta, data):
 
     pTheta = calculate_pTheta(theta)
 
-    score = np.dot(pD, np.log(pTheta))
+    score = float(np.dot(pD, np.log(pTheta)))
 
     op_diag = lambda x: apply_eye_minus_Q_diag(theta, x)
     op_offdiag = lambda x: apply_eye_minus_Q_offdiag(theta, x, transpose=True)
     q = jacobi(op_diag, op_offdiag, pD / pTheta)
 
-    gradient = np.zeros((d, d))
+    gradient = np.zeros((d, d), dtype=np.float64)
 
     # Get precomputed masks for gradient computation
     masks_0, masks_1 = _get_bit_masks(d)
@@ -136,7 +144,11 @@ def gradient_and_score(theta, data):
     return gradient, score
 
 
-def apply_eye_minus_Q(theta, x, transpose=False):
+def apply_eye_minus_Q(
+    theta: NDArray[np.float64],
+    x: NDArray[np.float64],
+    transpose: bool = False,
+) -> NDArray[np.float64]:
     """
     Calculates (I-Q) @ x for a given theta matrix and vector x.
 
@@ -182,7 +194,11 @@ def apply_eye_minus_Q(theta, x, transpose=False):
     return b
 
 
-def apply_eye_minus_Q_diag(theta, x, transpose=False):
+def apply_eye_minus_Q_diag(
+    theta: NDArray[np.float64],
+    x: NDArray[np.float64],
+    transpose: bool = False,
+) -> NDArray[np.float64]:
     """
     Calculates diag(I-Q) @ x for a given theta matrix and vector x.
 
@@ -222,7 +238,11 @@ def apply_eye_minus_Q_diag(theta, x, transpose=False):
     return b
 
 
-def apply_eye_minus_Q_offdiag(theta, x, transpose=False):
+def apply_eye_minus_Q_offdiag(
+    theta: NDArray[np.float64],
+    x: NDArray[np.float64],
+    transpose: bool = False,
+) -> NDArray[np.float64]:
     """
     Calculates offdiag(I-Q) @ x for a given theta matrix and vector x.
 
@@ -265,7 +285,11 @@ def apply_eye_minus_Q_offdiag(theta, x, transpose=False):
     return b
 
 
-def apply_Qdiff_ii(theta, x, i):
+def apply_Qdiff_ii(
+    theta: NDArray[np.float64],
+    x: NDArray[np.float64],
+    i: int,
+) -> NDArray[np.float64]:
     """
     Calculates dQ/d(theta_ii) @ x for a given theta matrix and vector x.
 
@@ -301,7 +325,7 @@ def apply_Qdiff_ii(theta, x, i):
     return v
 
 
-def create_full_Q(theta):
+def create_full_Q(theta: NDArray[np.float64]) -> NDArray[np.float64]:
     """
     Creates the full Q matrix for a given theta matrix.
 
@@ -320,7 +344,7 @@ def create_full_Q(theta):
     """
     d = theta.shape[0]
     bigTheta = np.exp(theta)
-    Q = np.zeros((2**d, 2**d))
+    Q = np.zeros((2**d, 2**d), dtype=np.float64)
     for i in range(d):
         term = np.ones(1)
         for j in range(d):

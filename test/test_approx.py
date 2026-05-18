@@ -64,6 +64,6 @@ def test_approx_gradient_shape(rng, d, N):
     gradient, _ = fastmhn.approx.approx_gradient_and_score(
         test_theta, test_data, max_cluster_size=d
     )
-    assert gradient.shape == test_theta.shape, (
-        f"Gradient shape {gradient.shape} doesn't match theta shape {test_theta.shape}"
-    )
+    assert (
+        gradient.shape == test_theta.shape
+    ), f"Gradient shape {gradient.shape} doesn't match theta shape {test_theta.shape}"

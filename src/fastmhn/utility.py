@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Callable, Optional, Tuple
+
 import numpy as np
-from typing import Callable, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
 
-def get_subdata(data: NDArray[np.int32], columns: list[int]) -> NDArray[np.int32]:
+def get_subdata(
+    data: NDArray[np.int32], columns: list[int]
+) -> NDArray[np.int32]:
     """
     Reduces a dataset to contain fewer events.
 
@@ -201,11 +204,18 @@ def create_pD(data: NDArray[np.int32]) -> NDArray[np.float64]:
     """
 
     d = data.shape[1]
+    N = data.shape[0]
+    # Handle empty dataset
+    if N == 0:
+        # Return uniform distribution over all 2^d states, or [1.0] for d=0
+        pD = np.ones(2**d)
+        pD /= 2**d
+        return pD
     # Vectorized: convert each row to integer using bitwise operations
     powers = 1 << np.arange(d - 1, -1, -1)
     indices = np.dot(data, powers)
     pD = np.bincount(indices, minlength=2**d)
-    return pD / data.shape[0]
+    return pD / N
 
 
 def forward_substitution(
@@ -392,7 +402,9 @@ def cmhn_from_omhn(theta_omhn: NDArray[np.float64]) -> NDArray[np.float64]:
 
 def adamW(
     params_init: NDArray[np.float64],
-    grad_and_score_func: Callable[[NDArray[np.float64]], Tuple[NDArray[np.float64], float]],
+    grad_and_score_func: Callable[
+        [NDArray[np.float64]], Tuple[NDArray[np.float64], float]
+    ],
     reg_grad_func: Callable[[NDArray[np.float64]], NDArray[np.float64]],
     alpha: float = 1e-3,
     beta1: float = 0.9,
@@ -486,7 +498,9 @@ def adamW(
 
 def adam(
     params_init: NDArray[np.float64],
-    grad_and_score_func: Callable[[NDArray[np.float64]], Tuple[NDArray[np.float64], float]],
+    grad_and_score_func: Callable[
+        [NDArray[np.float64]], Tuple[NDArray[np.float64], float]
+    ],
     reg_grad_func: Callable[[NDArray[np.float64]], NDArray[np.float64]],
     alpha: float = 1e-3,
     beta1: float = 0.9,

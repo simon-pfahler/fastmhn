@@ -14,8 +14,12 @@ def test_gradient_and_score_explicit(rng, d):
     p0 = np.zeros(2**d)
     p0[0] = 1
 
-    apply_func = lambda v: fastmhn.exact.apply_eye_minus_Q(theta, v, transpose=False)
-    apply_T_func = lambda v: fastmhn.exact.apply_eye_minus_Q(theta, v, transpose=True)
+    apply_func = lambda v: fastmhn.exact.apply_eye_minus_Q(
+        theta, v, transpose=False
+    )
+    apply_T_func = lambda v: fastmhn.exact.apply_eye_minus_Q(
+        theta, v, transpose=True
+    )
 
     gradient, score = fastmhn.exact.gradient_and_score(theta, data)
     Q = fastmhn.explicit.create_full_Q(theta)
@@ -118,7 +122,9 @@ def test_score_is_negative(rng):
         test_data = rng.integers(0, high=2, size=(50, test_d))
 
         _, score = fastmhn.exact.gradient_and_score(test_theta, test_data)
-        assert score < 0, f"Score should be negative, got {score} for d={test_d}"
+        assert (
+            score < 0
+        ), f"Score should be negative, got {score} for d={test_d}"
 
 
 def test_pTheta_is_probability_distribution(rng):
@@ -127,7 +133,9 @@ def test_pTheta_is_probability_distribution(rng):
         test_theta = rng.normal(size=(test_d, test_d))
 
         pTheta = fastmhn.explicit.calculate_pTheta(test_theta)
-        assert np.abs(np.sum(pTheta) - 1) < 1e-10, f"pTheta doesn't sum to 1 for d={test_d}"
+        assert (
+            np.abs(np.sum(pTheta) - 1) < 1e-10
+        ), f"pTheta doesn't sum to 1 for d={test_d}"
         assert np.all(
             pTheta >= -1e-12
         ), f"pTheta has negative values for d={test_d}"  # Allow tiny negative due to numerical errors

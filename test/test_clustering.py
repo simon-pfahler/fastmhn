@@ -198,7 +198,9 @@ def test_clustering_preserves_all_events():
     for d in range(1, 8):
         theta = np.random.default_rng(42).normal(size=(d, d))
         for max_size in [1, 2, d]:
-            clustering = get_clustering_with_seed(theta, seed=42, max_size=max_size)
+            clustering = get_clustering_with_seed(
+                theta, seed=42, max_size=max_size
+            )
 
             # Flatten all clusters
             all_events = []
@@ -206,9 +208,9 @@ def test_clustering_preserves_all_events():
                 all_events.extend(c)
 
             # Each event 0..d-1 should appear exactly once
-            assert sorted(all_events) == list(range(d)), (
-                f"Events not preserved for d={d}, max_size={max_size}"
-            )
+            assert sorted(all_events) == list(
+                range(d)
+            ), f"Events not preserved for d={d}, max_size={max_size}"
 
 
 def test_clustering_size_monotonic():
@@ -219,9 +221,9 @@ def test_clustering_size_monotonic():
     clustering_large = get_clustering_with_seed(theta, seed=42, max_size=d)
     clustering_small = get_clustering_with_seed(theta, seed=42, max_size=2)
 
-    assert len(clustering_small) >= len(clustering_large), (
-        f"Smaller max_size should produce at least as many clusters"
-    )
+    assert len(clustering_small) >= len(
+        clustering_large
+    ), f"Smaller max_size should produce at least as many clusters"
 
 
 def test_clustering_disjoint_clusters():
@@ -232,7 +234,7 @@ def test_clustering_disjoint_clusters():
 
     # Check all pairs of clusters are disjoint
     for i, c1 in enumerate(clustering):
-        for c2 in clustering[i + 1:]:
-            assert len(set(c1) & set(c2)) == 0, (
-                f"Clusters {c1} and {c2} have overlapping events"
-            )
+        for c2 in clustering[i + 1 :]:
+            assert (
+                len(set(c1) & set(c2)) == 0
+            ), f"Clusters {c1} and {c2} have overlapping events"

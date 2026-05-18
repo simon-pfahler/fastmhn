@@ -11,19 +11,23 @@ def test_generate_data(N_large):
     nr_samples = dict(zip(*np.unique(active_events, return_counts=True)))
     probability = 1 / 31
     assert (
-        np.abs(nr_samples[0] - N_large * probability) < 20 * np.sqrt(N_large) * probability
+        np.abs(nr_samples[0] - N_large * probability)
+        < 20 * np.sqrt(N_large) * probability
     ), f"Wrong number of samples without any events generated ({nr_samples[0]})!"
     probability = 30 / 31 * 1 / 21
     assert (
-        np.abs(nr_samples[1] - N_large * probability) < 20 * np.sqrt(N_large) * probability
+        np.abs(nr_samples[1] - N_large * probability)
+        < 20 * np.sqrt(N_large) * probability
     ), f"Wrong number of samples with one event generated ({nr_samples[1]})!"
     probability = 30 / 31 * 20 / 21 * 1 / 11
     assert (
-        np.abs(nr_samples[2] - N_large * probability) < 20 * np.sqrt(N_large) * probability
+        np.abs(nr_samples[2] - N_large * probability)
+        < 20 * np.sqrt(N_large) * probability
     ), f"Wrong number of samples with two event generated ({nr_samples[2]})!"
     probability = 30 / 31 * 20 / 21 * 10 / 11
     assert (
-        np.abs(nr_samples[3] - N_large * probability) < 20 * np.sqrt(N_large) * probability
+        np.abs(nr_samples[3] - N_large * probability)
+        < 20 * np.sqrt(N_large) * probability
     ), f"Wrong number of samples with three event generated ({nr_samples[3]})!"
 
 
@@ -204,14 +208,15 @@ def test_adamW():
 
 def test_create_pD_empty_data():
     """Test pD creation with empty dataset (d=0)."""
-    import warnings
     data = np.zeros((0, 0), dtype=np.int32)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        pD = fastmhn.utility.create_pD(data)
+    pD = fastmhn.utility.create_pD(data)
     assert (
         pD.shape[0] == 1
     ), f"pD should have 1 element for d=0, got {pD.shape[0]}"
+    # Empty dataset should return uniform distribution
+    assert (
+        np.abs(pD[0] - 1.0) < 1e-12
+    ), f"Empty dataset should have pD[0]=1, got {pD[0]}"
 
 
 def test_create_pD_single_event():

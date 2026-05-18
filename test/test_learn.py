@@ -155,9 +155,9 @@ def test_learn_initialization_is_independence_model(rng, d):
     theta_ind = fastmhn.utility.create_indep_model(data)
 
     # With N_max=0, only initialization is returned
-    assert np.linalg.norm(theta - theta_ind) < 1e-12, (
-        "Initialization does not match independence model"
-    )
+    assert (
+        np.linalg.norm(theta - theta_ind) < 1e-12
+    ), "Initialization does not match independence model"
 
 
 def test_learn_theta_regularization_shrinks_values(rng, d):
@@ -167,9 +167,11 @@ def test_learn_theta_regularization_shrinks_values(rng, d):
     adam_params = {"N_max": 20, "verbose": False}
 
     theta_no_reg = fastmhn.learn.learn_mhn(data, reg=0, adam_params=adam_params)
-    theta_with_reg = fastmhn.learn.learn_mhn(data, reg=0.1, adam_params=adam_params)
+    theta_with_reg = fastmhn.learn.learn_mhn(
+        data, reg=0.1, adam_params=adam_params
+    )
 
     # L1 regularization should shrink parameters toward zero
-    assert np.linalg.norm(theta_with_reg) < np.linalg.norm(theta_no_reg), (
-        "Regularization should shrink parameter magnitudes"
-    )
+    assert np.linalg.norm(theta_with_reg) < np.linalg.norm(
+        theta_no_reg
+    ), "Regularization should shrink parameter magnitudes"

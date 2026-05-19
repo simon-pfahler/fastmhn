@@ -6,7 +6,7 @@
 
 ## Overview
 
-Mutational Hierarchical Networks (MHNs) are probabilistic graphical models used to model the accumulation of mutations in cancer and other evolutionary processes. They capture dependencies between binary events (e.g., mutations, copy-number alterations) through a graph structure.
+Mutational Hazard Networks (MHNs) are probabilistic graphical models used to model the accumulation of mutations in cancer and other evolutionary processes. They capture dependencies between binary events (e.g., mutations, copy-number alterations) through promoting or inhibiting pairwise influences.
 
 This package provides:
 

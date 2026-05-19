@@ -1,7 +1,7 @@
 """
 fastmhn -- Fast inference of MHN (Mutual Hazard Networks) models.
 
-Version: 1.0.1
+Version: 1.0.2
 
 Modules
 -------
@@ -13,7 +13,7 @@ clustering  : Hierarchical clustering algorithms
 learn       : Learning algorithms (Adam, AdamW) and model fitting
 """
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 from . import approx, clustering, exact, explicit, learn, utility
 from .approx import approx_gradient_and_score

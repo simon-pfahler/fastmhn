@@ -2,7 +2,7 @@
 
 # FastMHN - Fast inference of MHNs
 
-**FastMHN** is a Python package for approximate learning of Mutational Hierarchical Networks (MHNs) and observation MHNs (oMHNs). It enables fast inference through suitable rank-1 approximations of the time-marginalized probability distributions, making it practical to work with larger datasets where exact methods would be computationally prohibitive.
+**FastMHN** is a Python package for approximate learning of Mutational Hazard Networks (MHNs) and observation MHNs (oMHNs). It enables fast inference through suitable rank-1 approximations of the time-marginalized probability distributions, making it practical to work with larger datasets where exact methods would be computationally prohibitive.
 
 ## Overview
 

@@ -1,5 +1,5 @@
 """
-fastmhn -- Fast inference of MHN (Mutational Hierarchical Networks) models.
+fastmhn -- Fast inference of MHN (Mutual Hazard Networks) models.
 
 Version: 1.0.1
 

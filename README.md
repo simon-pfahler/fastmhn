@@ -2,11 +2,11 @@
 
 # FastMHN - Fast inference of MHNs
 
-**FastMHN** is a Python package for approximate learning of Mutational Hazard Networks (MHNs) and observation MHNs (oMHNs). It enables fast inference through suitable rank-1 approximations of the time-marginalized probability distributions, making it practical to work with larger datasets where exact methods would be computationally prohibitive.
+**FastMHN** is a Python package for approximate learning of Mutual Hazard Networks (MHNs) and observation MHNs (oMHNs). It enables fast inference through suitable rank-1 approximations of the time-marginalized probability distributions, making it practical to work with larger datasets where exact methods would be computationally prohibitive.
 
 ## Overview
 
-Mutational Hazard Networks (MHNs) are probabilistic graphical models used to model the accumulation of mutations in cancer and other evolutionary processes. They capture dependencies between binary events (e.g., mutations, copy-number alterations) through promoting or inhibiting pairwise influences.
+Mutual Hazard Networks (MHNs) are probabilistic graphical models used to model the accumulation of mutations in cancer and other evolutionary processes. They capture dependencies between binary events (e.g., mutations, copy-number alterations) through promoting or inhibiting pairwise influences.
 
 This package provides:
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import numpy as np
 
@@ -21,7 +21,7 @@ def learn_mhn(
     adam_params: dict[str, Any] = {},
 ) -> NDArray[np.float64]:
     """
-    Learn an MHN (Mutational Hierarchical Network) model from data.
+    Learn an MHN (Mutual Hazard Network) model from data.
 
     This function fits an MHN model to the given dataset using the Adam optimizer.
     It handles absent events (events that never occur in the data) by learning
@@ -104,10 +104,10 @@ def learn_mhn(
     adam_params.setdefault("verbose", True)
     # <<< initialization
 
-    grad_and_score_func: Callable[[NDArray[np.float64]], tuple[NDArray[np.float64], float]] = (
-        lambda theta: approx_gradient_and_score(
-            theta, data, weights=weights, **gradient_and_score_params
-        )
+    grad_and_score_func: Callable[
+        [NDArray[np.float64]], tuple[NDArray[np.float64], float]
+    ] = lambda theta: approx_gradient_and_score(
+        theta, data, weights=weights, **gradient_and_score_params
     )
 
     regularization_mask = np.ones_like(theta_init, dtype=bool)
@@ -131,7 +131,7 @@ def learn_omhn(
     adam_params: dict[str, Any] = {},
 ) -> NDArray[np.float64]:
     """
-    Learn an oMHN (observation Mutational Hierarchical Network) model from data.
+    Learn an oMHN (observation Mutual Hazard Network) model from data.
 
     oMHN extends MHN by adding observation rates that model the probability
     of observing each event. This function fits an oMHN model to the given
@@ -218,7 +218,9 @@ def learn_omhn(
     adam_params.setdefault("verbose", True)
     # <<< initialization
 
-    def grad_and_score_func(theta: NDArray[np.float64]) -> tuple[NDArray[np.float64], float]:
+    def grad_and_score_func(
+        theta: NDArray[np.float64],
+    ) -> tuple[NDArray[np.float64], float]:
         ctheta = cmhn_from_omhn(theta)
         g = np.zeros_like(theta)
         g[:d], s = approx_gradient_and_score(

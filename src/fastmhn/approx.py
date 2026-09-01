@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Callable, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Optional, Tuple
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 from .clustering import hierarchical_clustering
 from .exact import gradient_and_score
 from .utility import create_pD
+
+nr_processes = -1
 
 
 def __get_approx_gradient_and_score_contributions(
@@ -88,7 +90,7 @@ def __get_approx_gradient_and_score_contributions(
         s_total *= weights[nr_patient]
         return g_total, s_total
 
-    results = Parallel(n_jobs=-1)(
+    results = Parallel(n_jobs=nr_processes)(
         delayed(process_patient)(i) for i in range(data.shape[0])
     )
 

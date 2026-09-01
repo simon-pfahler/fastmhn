@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import warnings
 from typing import TYPE_CHECKING, Callable, Optional, Tuple
 
@@ -13,6 +14,8 @@ from .clustering import hierarchical_clustering
 from .exact import gradient_and_score
 from .utility import create_pD
 
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
 nr_processes = -1
 
 

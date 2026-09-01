@@ -16,7 +16,7 @@ learn       : Learning algorithms (Adam, AdamW) and model fitting
 __version__ = "1.0.2"
 
 from . import approx, clustering, exact, explicit, learn, utility
-from .approx import approx_gradient_and_score
+from .approx import approx_gradient_and_score, nr_processes
 from .clustering import hierarchical_clustering
 from .exact import gradient_and_score
 from .explicit import (
@@ -70,6 +70,7 @@ __all__ = [
     "score",
     # approx
     "approx_gradient_and_score",
+    "nr_processes",
     # clustering
     "hierarchical_clustering",
     # learn

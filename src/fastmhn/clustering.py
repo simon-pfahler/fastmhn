@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
@@ -74,7 +75,13 @@ def hierarchical_clustering(
     inv_cluster_distances = np.zeros((len(clustering), len(clustering)))
     # add tiny random noise so we get clusters of size >1 even when theta is
     # diagonal
-    inv_cluster_distances += np.random.normal(
+    # we need reproducibility, so this noise needs to deterministically depend
+    # on the input
+    h = hashlib.blake2b(digest_size=8)
+    h.update(np.ascontiguousarray(theta, dtype=np.float64).tobytes())
+    h.update(f"{e1}:{e2}:{max_size}:{sorted(active_events)}".encode())
+    rng = np.random.default_rng(int.from_bytes(h.digest(), "little"))
+    inv_cluster_distances += rng.normal(
         loc=0,
         scale=1e-5,
         size=inv_cluster_distances.shape,
